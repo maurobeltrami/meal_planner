@@ -1,0 +1,143 @@
+{% load custom_filters %} 
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Piano Settimanale</title>
+    <style>
+        /* CSS Base per Usabilità e Stile */
+        body { 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            margin: 40px; 
+            background-color: #f4f7f6; 
+            color: #333;
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 3px solid #3498db; 
+            padding-bottom: 10px; 
+            margin-bottom: 25px;
+        }
+        .recipe-link { 
+            color: #2980b9; 
+            text-decoration: none; 
+            font-weight: 600; 
+        }
+        .recipe-link:hover { 
+            text-decoration: underline; 
+        }
+        
+        /* Stile Griglia */
+        .grid-container { 
+            display: grid; 
+    /* 1 colonna per il giorno + X colonne per i tipi di pasto */
+    /* dove X è il numero di elementi in meal_types. Abbiamo 4 tipi di pasto (LUN, DIN, BRK, SNK) */
+    grid-template-columns: 1fr repeat({{ meal_types|length }}, 1fr);
+            border: 1px solid #ccc; 
+            background-color: #fff; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .header { 
+            background-color: #3498db; 
+            color: white; 
+            font-weight: bold; 
+            text-align: center; 
+            padding: 12px 10px; 
+            font-size: 0.95em;
+        }
+        .cell { 
+            padding: 15px; 
+            border-bottom: 1px solid #ecf0f1; 
+            border-right: 1px solid #ecf0f1; 
+            min-height: 50px; 
+            display: flex; 
+            align-items: center; 
+        }
+        .day-cell { 
+            background-color: #ecf0f1; 
+            font-weight: bold; 
+            color: #2c3e50;
+            border-right: 2px solid #ccc; 
+        }
+        .meal-cell { 
+            font-size: 0.9em; 
+        }
+        
+        /* Stile Form */
+        .form-section { 
+            background-color: #fff; 
+            padding: 25px; 
+            border-radius: 8px; 
+            margin-bottom: 30px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #ddd;
+        }
+        .form-section label {
+            display: block;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        .form-section select, .form-section button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        .form-section button {
+            background-color: #27ae60; 
+            color: white; 
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .form-section button:hover {
+            background-color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗓️ Il Tuo Piano Settimanale</h1>
+    <p>
+        <a href="{% url 'shopping_list' %}" class="recipe-link" style="font-size: 1.1em;">
+            ➡️ Genera e Visualizza la Lista della Spesa
+        </a>
+    </p>
+
+    <div class="form-section">
+        <h3>Aggiungi o Modifica Pasto</h3>
+        <form method="post">
+            {% csrf_token %}
+            
+            {{ form.as_p }}
+            
+            <button type="submit">Salva Pasto</button>
+        </form>
+    </div>
+
+    <div class="grid-container">
+        <div class="header">Giorno</div>
+        {% for meal_code, meal_name in meal_types %}
+            <div class="header">{{ meal_name }}</div>
+        {% endfor %}
+
+        {% for day_code, day_data in meal_grid.items %}
+            <div class="cell day-cell">{{ day_data.name }}</div>
+            
+            {% for meal_code, meal_name in meal_types %}
+                <div class="cell meal-cell">
+                    {% if day_data.meals|get_item:meal_code %}
+                        <strong>{{ day_data.meals|get_item:meal_code }}</strong>
+                    {% else %}
+                        - (Vuoto) -
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+</body>
+</html>

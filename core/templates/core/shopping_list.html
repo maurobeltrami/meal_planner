@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #333; }
+        ul { list-style: none; padding: 0; }
+        li { background: #f9f9f9; margin-bottom: 8px; padding: 10px; border-left: 5px solid #007bff; }
+        .quantity { font-weight: bold; color: #d9534f; margin-right: 5px; }
+        .unit { color: #5cb85c; }
+    </style>
+</head>
+<body>
+    <h1>🛒 Lista della Spesa Aggregata</h1>
+
+    {% if shopping_list %}
+        <ul>
+        {% for item in shopping_list %}
+            <li>
+                <span class="quantity">{{ item.total_quantity|floatformat:1 }}</span> 
+                <span class="unit">{{ item.ingredient__unit }}</span> 
+                di 
+                <strong>{{ item.ingredient__name }}</strong>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Il piano settimanale è vuoto. Aggiungi ricette per generare la lista!</p>
+    {% endif %}
+
+    <p>Nota: I decimali sono arrotondati a una cifra per chiarezza.</p>
+</body>
+</html>
