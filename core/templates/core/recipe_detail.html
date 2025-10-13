@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; background-color: #f4f7f6; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 25px; }
+        
+        .formset-container { background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .formset-row { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; gap: 20px; align-items: center; }
+        .formset-row p { margin: 0; }
+        /* Stili per allineare i campi del formset */
+        .field-label { font-weight: bold; min-width: 80px; }
+        .field-input { flex-grow: 1; max-width: 250px; }
+
+        .formset-row input[type="number"], .formset-row select { 
+            width: 100%;
+            padding: 8px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+        }
+        .submit-btn { 
+            background-color: #27ae60; 
+            color: white; 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin-top: 20px; 
+        }
+        .delete-checkbox { margin-left: auto; }
+        .back-link { display: block; margin-bottom: 20px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <a href="{% url 'weekly_plan' %}" class="back-link">⬅️ Torna al Piano Settimanale</a>
+    <h1>🍽️ Ingredienti per la Ricetta: {{ recipe.name }}</h1>
+    
+    <div class="formset-container">
+        <form method="post">
+            {% csrf_token %}
+            
+            {{ formset.management_form }}
+            
+            {% for form in formset %}
+                <div class="formset-row">
+                    {% if form.instance.pk %}
+                        {{ form.id }}
+                    {% endif %}
+                    
+                    {{ form.recipe }} 
+                    
+                    <div class="field-label">{{ form.ingredient.label_tag }}</div>
+                    <div class="field-input">{{ form.ingredient }}</div>
+                    
+                    <div class="field-label">{{ form.quantity.label_tag }}</div>
+                    <div class="field-input">{{ form.quantity }}</div>
+                    
+                    <div class="delete-checkbox">
+                        {{ form.DELETE.label_tag }}
+                        {{ form.DELETE }}
+                    </div>
+                    
+                    {% if form.errors %}
+                        <div style="color: red;">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <p>{{ field.label }}: {{ error }}</p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="submit-btn">Salva Tutti gli Ingredienti</button>
+        </form>
+    </div>
+    
+    <p style="margin-top: 30px; font-size: 0.9em; color: #7f8c8d;">
+        Suggerimento: Le righe vuote possono essere usate per aggiungere nuovi ingredienti. Selezionando "Elimina" si rimuoverà l'ingrediente dalla ricetta al prossimo salvataggio.
+    </p>
+</body>
+</html>
