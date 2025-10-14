@@ -116,6 +116,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# Aggiunge i percorsi dove Django cerca i file statici nelle app
+STATICFILES_DIRS = [
+    # Se hai static files a livello di progetto (non all'interno di un'app)
+    # BASE_DIR / "static", 
+]
+
+# Il percorso dove Django raccoglierà tutti i file statici (necessario per COLLECTSTATIC)
+STATIC_ROOT = BASE_DIR / "staticfiles" 
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
