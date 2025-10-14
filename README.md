@@ -15,7 +15,7 @@ Per avviare il progetto in locale:
 
 1.  **Clona il repository:**
     ```bash
-    git clone [INSERISCI QUI IL LINK DEL REPO QUANDO LO CARICHERAI SU GITHUB/GITLAB]
+    git clone [https://github.com/maurobeltrami/meal_planner]
     cd meal_planner
     ```
 
