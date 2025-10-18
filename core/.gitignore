@@ -12,7 +12,7 @@ env/
 *.log
 *.sqlite3
 db.sqlite3
-/static
+/staticfiles
 /media
 
 # MacOS specific files

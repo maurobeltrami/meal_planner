@@ -1,65 +1,79 @@
-{% load custom_filters %} 
 {% load static %}
-<!DOCTYPE html>
+{% load core_tags %}  <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Piano Settimanale</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}"> 
+    <title>SpesaFacile</title>
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
 </head>
 <body>
-    <h1>🗓️ Il Tuo Piano Settimanale</h1>
-    
-    <div class="forms-container" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 20px;">
-        <div class="action-box">
-            <a href="{% url 'shopping_list' %}" class="big-link style-accent">
-                ➡️ Lista della Spesa
-            </a>
-        </div>
-        <div class="action-box">
-            <a href="{% url 'recipe_create' %}" class="big-link style-create">
-                ➕ Crea Nuova Ricetta
-            </a>
-        </div>
-        <div class="action-box">
-            <a href="{% url 'recipe_list' %}" class="big-link style-edit">
-                ✍️ Modifica Ricetta
-            </a>
+    <h1>SpesaFacile</h1>
+    <h2>Piano Settimanale</h2>
+
+    <div class="form-section">
+        <h3>Calendario</h3>
+        <div class="grid-container">
+            <div class="header">Giorno</div> 
+            {% for meal_code, meal_name in meal_types %}
+                <div class="header">{{ meal_name }}</div>
+            {% endfor %}
+
+            {% for day_code, day_name in day_choices %}
+                <div class="cell day-cell">{{ day_name }}</div>
+                
+                {% for meal_code, meal_name in meal_types %}
+                    <div class="cell meal-cell">
+                        {% with recipe_data=meal_grid|get_item:day_code|get_item:'meals'|get_item:meal_code %}
+                            {% if recipe_data and recipe_data.name %}
+                                <a href="{% url 'recipe_update' pk=recipe_data.pk %}" class="recipe-link">
+                                    {{ recipe_data.name }}
+                                </a>
+                            {% else %}
+                                <em>Non Pianificato</em>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
         </div>
     </div>
-    
-    <div class="form-section" style="margin-bottom: 30px;">
-        <h3>✏️ Aggiungi o Modifica Pasto nel Piano</h3>
+
+    <div class="form-section">
+        <h3>Assegna un Pasto</h3>
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit">Salva Pasto</button>
+            <button type="submit">Aggiorna Piano</button>
         </form>
     </div>
 
-    <div class="grid-container">
-        <div class="header">Giorno</div>
-        {% for meal_code, meal_name in meal_types %}
-            <div class="header">{{ meal_name }}</div>
-        {% endfor %}
+    <div class="forms-container">
+        
+        <div class="action-box">
+            <a href="{% url 'shopping_list' %}" class="big-link style-shopping">
+                <i>🛒</i>
+                <strong>Lista della Spesa</strong>
+                <small>(Calcolo Aggregato)</small>
+            </a>
+        </div>
 
-        {% for day_code, day_data in meal_grid.items %}
-            <div class="cell day-cell">{{ day_data.name }}</div>
-            
-            {% for meal_code, meal_name in meal_types %}
-                <div class="cell meal-cell">
-                    {% with meal_data=day_data.meals|get_item:meal_code %}
-                        {% if meal_data %}
-                            <a href="{% url 'recipe_update' pk=meal_data.pk %}" class="recipe-link">
-                                {{ meal_data.name }}
-                            </a>
-                        {% else %}
-                            - (Vuoto) -
-                        {% endif %}
-                    {% endwith %}
-                </div>
-            {% endfor %}
-        {% endfor %}
+        <div class="action-box">
+            <a href="{% url 'recipe_create' %}" class="big-link style-create">
+                <i>✨</i>
+                <strong>Crea Nuova Ricetta</strong>
+                <small>(Aggiungi ingredienti)</small>
+            </a>
+        </div>
+
+        <div class="action-box">
+            <a href="{% url 'recipe_list' %}" class="big-link style-edit">
+                <i>📝</i>
+                <strong>Modifica Ricette</strong>
+                <small>(Scegli dalla lista)</small>
+            </a>
+        </div>
+
     </div>
+
 </body>
 </html>

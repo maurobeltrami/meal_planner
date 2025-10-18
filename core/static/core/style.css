@@ -1,0 +1,306 @@
+/* File: core/static/core/style.css (Design Accattivante e Leggibile) */
+
+:root {
+    /* Nuovi Colori con Tonalità Calde e Pastello */
+    --color-primary: #588da8;
+    /* Blu pastello (Azione, Link) */
+    --color-accent: #ff9f43;
+    /* Arancione vivace (Accent, Bottone 'Aggiungi Ingrediente') */
+    --color-success: #78c558;
+    /* Verde (Salvataggio, Crea Ricetta) */
+    --color-shopping: #6a538d;
+    /* Viola scuro (Lista Spesa - Contro il bianco) */
+    --color-background: #f7f9fb;
+    /* Sfondo molto chiaro */
+    --color-light-gray: #eef1f5;
+    /* Sfondo Celle Giorno */
+    --color-text: #363636;
+    /* Testo Scuro */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 40px;
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+h1 {
+    color: var(--color-text);
+    border-bottom: 3px solid var(--color-accent);
+    padding-bottom: 10px;
+    margin-bottom: 35px;
+    font-weight: 300;
+}
+
+/* Links e Bottoni */
+.back-link {
+    display: inline-block;
+    margin-bottom: 25px;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: var(--color-accent);
+}
+
+/* Contenitori Form e Box Generici */
+.form-section {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-section h3 {
+    margin-top: 0;
+    color: var(--color-primary);
+    font-weight: 400;
+    border-bottom: 1px solid var(--color-light-gray);
+    padding-bottom: 10px;
+}
+
+/* Rimuove lo spazio predefinito dei campi <p> di Django nei form */
+.form-section p {
+    margin: 0 0 15px 0;
+}
+
+
+/* Stili Input */
+select,
+input[type="text"],
+input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+select:focus,
+input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.2);
+    outline: none;
+}
+
+/* Bottoni di Azione */
+.form-section button,
+.submit-btn,
+#add-more-btn {
+    background-color: var(--color-success);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.form-section button:hover,
+.submit-btn:hover {
+    background-color: #5cb841;
+    transform: translateY(-1px);
+}
+
+#add-more-btn {
+    background-color: var(--color-accent);
+}
+
+#add-more-btn:hover {
+    background-color: #ff8c2d;
+    transform: translateY(-1px);
+}
+
+/* ------------------------------------------------------------------- */
+/* 🍔 STILI GRIGLIA SETTIMANALE (weekly_plan.html) */
+/* ------------------------------------------------------------------- */
+
+.grid-container {
+    display: grid;
+    grid-template-columns: 1.2fr repeat(4, 1fr);
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+.header {
+    background-color: var(--color-primary);
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    padding: 15px 10px;
+    font-size: 1em;
+}
+
+.cell {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #eee;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    background-color: white;
+    transition: background-color 0.15s;
+}
+
+.cell:hover {
+    background-color: #fcfdff;
+}
+
+/* Cella del Giorno (Prima Colonna) */
+.day-cell {
+    background-color: var(--color-light-gray);
+    font-weight: 700;
+    color: var(--color-text);
+    border-right: 2px solid #ccc;
+}
+
+/* Link Ricetta nella Cella */
+.recipe-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.recipe-link:hover {
+    text-decoration: underline;
+    color: var(--color-accent);
+}
+
+/* Box Azioni (Sotto la Griglia) */
+.forms-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 25px;
+    margin-top: 35px;
+
+
+    padding: 0 0 20px 0;
+    width: 90%;
+    max-width: 1200px;
+    margin: 35px auto 35px auto;
+}
+
+
+.action-box {
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+.big-link {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+    color: white;
+    height: 100%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.big-link strong {
+    font-size: 1.3em;
+    margin-top: 10px;
+}
+
+.big-link small {
+    font-size: 0.9em;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.big-link i {
+    font-size: 2.5em;
+    margin-bottom: 5px;
+}
+
+/* STILI SPECIFICI PER LE AZIONI */
+.style-shopping {
+    background-color: var(--color-shopping);
+}
+
+/* Viola Scuro RISOLVE CONTRASTO */
+.style-shopping:hover {
+    background-color: #554474;
+    transform: translateY(-3px);
+}
+
+.style-create {
+    background-color: var(--color-success);
+}
+
+.style-create:hover {
+    background-color: #5cb841;
+    transform: translateY(-3px);
+}
+
+.style-edit {
+    background-color: var(--color-primary);
+}
+
+.style-edit:hover {
+    background-color: #4a7aa0;
+    transform: translateY(-3px);
+}
+
+/* ------------------------------------------------------------------- */
+/* 🧾 STILI FORMSET (recipe_detail.html) - Per l'impaginazione ingredienti */
+/* ------------------------------------------------------------------- */
+.formset-row {
+    border-bottom: 1px solid #eef1f5;
+    padding: 15px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    /* Ingrediente, Quantità, Cancella */
+    gap: 20px;
+    align-items: center;
+}
+
+.formset-row:nth-child(even) {
+    background-color: #fdfdfd;
+}
+
+.formset-row:last-of-type {
+    border-bottom: none;
+}
+
+/* Assicurati che gli input siano puliti e allineati */
+.field-input {
+    padding: 0;
+}
+
+.field-input select,
+.field-input input {
+    margin-bottom: 0;
+    /* Rimuove lo spazio extra dentro la riga della griglia */
+    max-width: 95%;
+    /* Leggermente meno di 100% per spazio */
+}
+
+.delete-checkbox {
+    text-align: center;
+    padding: 0 10px;
+}
+
+.delete-checkbox label {
+    font-size: 0.8em;
+}

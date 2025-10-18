@@ -5,29 +5,17 @@
     <meta charset="UTF-8">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{% static 'core/style.css' %}">
-    <style>
-        /* CSS Aggiuntivo per il pulsante */
-        #add-more-btn {
-            background-color: #f39c12;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-    </style>
 </head>
 <body>
     <a href="{% url 'weekly_plan' %}" class="back-link">⬅️ Torna al Piano Settimanale</a>
     <h1>🍽️ {{ title }}</h1>
     
     <div class="formset-container">
+        
         <form method="post" id="recipe-form">
             {% csrf_token %}
             
-            <div class="recipe-name-form form-section" style="margin-bottom: 20px;">
+            <div class="recipe-name-form form-section" style="margin-bottom: 25px;">
                 <h3>Dettagli Base</h3>
                 {{ recipe_form.as_p }}
             </div>
@@ -40,14 +28,19 @@
                 <div id="formset-body">
                     {% for form in formset %}
                         <div class="formset-row" data-formset-row>
+                            
                             {{ form.id }}
                             {{ form.recipe }} 
                             
-                            <div class="field-label">{{ form.ingredient.label_tag }}</div>
-                            <div class="field-input">{{ form.ingredient }}</div>
+                            <div class="field-input">
+                                <label for="{{ form.ingredient.id_for_label }}">{{ form.ingredient.label }}</label>
+                                {{ form.ingredient }}
+                            </div>
                             
-                            <div class="field-label">{{ form.quantity.label_tag }}</div>
-                            <div class="field-input">{{ form.quantity }}</div>
+                            <div class="field-input">
+                                <label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+                                {{ form.quantity }}
+                            </div>
                             
                             <div class="delete-checkbox">
                                 {{ form.DELETE.label_tag }}
@@ -55,10 +48,8 @@
                             </div>
                             
                             {% if form.errors %}
-                                <div style="color: red;">
-                                    {% for field in form %}{% for error in field.errors %}
-                                        <p>{{ field.label }}: {{ error }}</p>
-                                    {% endfor %}{% endfor %}
+                                <div style="grid-column: 1 / span 3; color: red; font-size: 0.9em; margin-top: 5px;">
+                                    Si prega di correggere gli errori.
                                 </div>
                             {% endif %}
                         </div>
@@ -87,7 +78,9 @@
             {{ ingredient_form.as_p }}
             <button type="submit" style="width: auto;">Crea Ingrediente</button>
         </form>
-        <p style="margin-top: 10px; font-size: 0.8em;">Dopo aver creato il nuovo ingrediente, ricarica la pagina per vederlo nel menu a tendina.</p>
+        <p style="margin-top: 15px; font-size: 0.9em; color: #777;">
+            Dopo aver creato il nuovo ingrediente, ricarica la pagina per vederlo nel menu a tendina e aggiungerlo alla ricetta.
+        </p>
     </div>
     
     <script>
@@ -96,60 +89,48 @@
             const formsetBody = document.getElementById('formset-body');
             const totalFormsInput = document.querySelector('input[name$="TOTAL_FORMS"]');
             
-            // Troviamo l'ultima riga esistente per usarla come modello di clonazione
+            // Troviamo il modello (il template da clonare). Se non ci sono righe, non facciamo nulla.
             const lastRow = formsetBody.querySelector('[data-formset-row]:last-child');
-            if (!lastRow) {
-                console.error("Non è stato trovato un formset-row da clonare. Verifica che formset.management_form sia presente.");
-                return;
-            }
+            if (!lastRow) return;
 
-            // Funzione helper per ottenere l'indice massimo corrente (per clonare l'ultima riga)
-            function getLastIndex() {
-                let maxIndex = -1;
-                formsetBody.querySelectorAll('[data-formset-row]').forEach(row => {
-                    // Cerca il nome di un campo per estrarre l'indice
-                    const inputName = row.querySelector('input, select, textarea')?.name;
-                    if (inputName) {
-                        const match = inputName.match(/(\d+)/);
-                        if (match) {
-                            maxIndex = Math.max(maxIndex, parseInt(match[1]));
-                        }
-                    }
-                });
-                return maxIndex;
-            }
-            
             addButton.addEventListener('click', function() {
                 // 1. Clonare l'ultima riga esistente
                 const newForm = lastRow.cloneNode(true); 
 
-                // 2. Ottenere il nuovo indice (basato su TOTAL_FORMS, che è l'indice corretto per la creazione)
+                // 2. Ottenere il nuovo indice
                 let currentForms = parseInt(totalFormsInput.value);
                 const newIndex = currentForms;
 
-                // 3. Regex per sostituire l'indice precedente con il nuovo indice
-                // Non possiamo usare l'indice precedente, usiamo la regex dinamica sul DOM clonato
-                const regex = new RegExp(`-[0-9]+-`, 'g');
+                // 3. Regex per sostituire l'indice
+                // Sostituisce l'indice numerico (es: '-0-', '-1-', etc.) con il nuovo indice
+                const regex = new RegExp(`-${currentForms - 1}-`, 'g'); // Clona l'indice dell'ultima riga
                 
-                // 4. Sostituzione di tutti gli attributi (name, id, for) con il nuovo indice
+                // Sostituzione di tutti gli attributi (name, id, for) con il nuovo indice
                 newForm.innerHTML = newForm.innerHTML.replace(regex, `-${newIndex}-`);
 
-                // 5. Ripulire i campi della nuova riga clonata
+                // 4. Ripulire i campi della nuova riga clonata
                 newForm.querySelectorAll('input, select, textarea').forEach(element => {
-                    // Imposta i campi a vuoto
-                    if (element.type !== 'hidden' && element.type !== 'checkbox') {
+                    // Solo i campi dati devono essere vuoti o non spuntati
+                    const name = element.getAttribute('name');
+                    
+                    if (element.type === 'text' || element.type === 'number') {
                         element.value = '';
-                    }
-                    // Assicura che la checkbox DELETE sia deselezionata
-                    if (element.type === 'checkbox' && element.name.endsWith('-DELETE')) {
+                    } else if (element.type === 'select-one') {
+                        // Resetta il select al primo valore (solitamente vuoto o placeholder)
+                        element.selectedIndex = 0;
+                    } else if (element.type === 'checkbox' && name && name.endsWith('-DELETE')) {
                         element.checked = false;
                     }
+                    // Nasconde il campo ID (se presente) che è gestito dal formset
+                    if (name && name.endsWith('-id')) { 
+                        element.value = '';
+                    }
                 });
-
-                // 6. Aggiungere la nuova riga al DOM
+                
+                // 5. Aggiungere la nuova riga al DOM
                 formsetBody.appendChild(newForm);
                 
-                // 7. Aggiornare il contatore totale nel Management Form
+                // 6. Aggiornare il contatore totale nel Management Form
                 totalFormsInput.value = currentForms + 1;
             });
         });
