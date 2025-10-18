@@ -1,9 +1,9 @@
-/* File: core/static/core/style.css (Design Accattivante e Leggibile) */
+/* File: core/static/core/style.css (Design Accattivante, Leggibile e Responsive) */
 
 :root {
     /* Nuovi Colori con Tonalità Calde e Pastello */
     --color-primary: #588da8;
-    /* Blu pastello (Azione, Link) */
+    /* Blu pastello (Azione, Link, Header Griglia) */
     --color-accent: #ff9f43;
     /* Arancione vivace (Accent, Bottone 'Aggiungi Ingrediente') */
     --color-success: #78c558;
@@ -185,15 +185,13 @@ input:focus {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 25px;
-    margin-top: 35px;
 
-
-    padding: 0 0 20px 0;
+    /* Modifiche per il padding laterale e il centraggio (da richiesta utente) */
     width: 90%;
     max-width: 1200px;
     margin: 35px auto 35px auto;
+    padding: 0 0 20px 0;
 }
-
 
 .action-box {
     padding: 0;
@@ -293,7 +291,6 @@ input:focus {
     margin-bottom: 0;
     /* Rimuove lo spazio extra dentro la riga della griglia */
     max-width: 95%;
-    /* Leggermente meno di 100% per spazio */
 }
 
 .delete-checkbox {
@@ -303,4 +300,84 @@ input:focus {
 
 .delete-checkbox label {
     font-size: 0.8em;
+}
+
+/* ------------------------------------------------------------------- */
+/* 📱 MEDIA QUERIES (Design Mobile) */
+/* ------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+
+    /* 1. Reset Margini/Padding Globali */
+    body {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+    }
+
+    /* 2. Layout Griglia Settimanale (weekly_plan.html) */
+    .grid-container {
+        display: block;
+        border: none;
+        box-shadow: none;
+        overflow-x: auto;
+        width: 650px;
+        /* Larghezza fissa per forzare lo scroll orizzontale */
+    }
+
+    .header,
+    .cell {
+        padding: 10px 8px;
+        font-size: 0.85em;
+        white-space: nowrap;
+    }
+
+    /* 3. Layout Tre Azioni Rapide */
+    .forms-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        margin: 20px auto;
+        width: 100%;
+    }
+
+    .big-link {
+        padding: 20px;
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+
+    .big-link i {
+        font-size: 1.8em;
+        margin-bottom: 0;
+        margin-right: 15px;
+    }
+
+    .big-link strong {
+        font-size: 1.1em;
+        margin-top: 0;
+        text-align: left;
+    }
+
+    .big-link small {
+        display: none;
+    }
+
+    /* 4. Layout Formset Ingredienti (recipe_detail.html) */
+    .formset-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 10px 0;
+    }
+
+    .delete-checkbox {
+        grid-column: 1 / span 2;
+        text-align: left;
+    }
+
+    .form-section {
+        padding: 15px;
+    }
 }
