@@ -1,79 +1,116 @@
 {% load static %}
-{% load core_tags %}  <!DOCTYPE html>
+{% load core_tags %} <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>SpesaFacile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpesaFacile | Piano Settimanale</title>
     <link rel="stylesheet" href="{% static 'core/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <h1>SpesaFacile</h1>
-    <h2>Piano Settimanale</h2>
+    
+    <h1>🍽️ SpesaFacile | Piano Settimanale dei Pasti</h1>
 
-    <div class="form-section">
-        <h3>Calendario</h3>
-        <div class="grid-container">
-            <div class="header">Giorno</div> 
-            {% for meal_code, meal_name in meal_types %}
-                <div class="header">{{ meal_name }}</div>
-            {% endfor %}
-
-            {% for day_code, day_name in day_choices %}
-                <div class="cell day-cell">{{ day_name }}</div>
-                
-                {% for meal_code, meal_name in meal_types %}
-                    <div class="cell meal-cell">
-                        {% with recipe_data=meal_grid|get_item:day_code|get_item:'meals'|get_item:meal_code %}
-                            {% if recipe_data and recipe_data.name %}
-                                <a href="{% url 'recipe_update' pk=recipe_data.pk %}" class="recipe-link">
-                                    {{ recipe_data.name }}
-                                </a>
-                            {% else %}
-                                <em>Non Pianificato</em>
-                            {% endif %}
-                        {% endwith %}
-                    </div>
-                {% endfor %}
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="form-section">
-        <h3>Assegna un Pasto</h3>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Aggiorna Piano</button>
-        </form>
-    </div>
-
-    <div class="forms-container">
+    <div class="grid-container">
         
+        <div class="header">Giorno</div>
+        {% for meal_code, meal_name in meal_types %}
+            <div class="header">{{ meal_name }}</div>
+        {% endfor %}
+
+        {% for day_code, day_name in day_choices %}
+            
+            <div class="cell day-cell">{{ day_name }}</div>
+            
+            {% for meal_code, meal_name in meal_types %}
+                <div class="cell meal-cell">
+                    
+                    {% with slot_data=meal_grid|get_item:day_code|get_item:'meals'|get_item:meal_code %}
+                        
+                        {% if slot_data and slot_data.slot_obj %}
+                            
+                            <a href="{% url 'meal_slot_update' pk=slot_data.slot_obj.pk %}" class="edit-slot-link" title="Modifica Pasto">
+                                <i class="fas fa-edit"></i> 
+                            </a>
+                            
+                            {% for recipe in slot_data.recipes %}
+                                <a href="{% url 'recipe_update' pk=recipe.pk %}" class="recipe-link">
+                                    {{ recipe.name }}
+                                </a>
+                            {% empty %}
+                                <a href="{% url 'meal_slot_update' pk=slot_data.slot_obj.pk %}" class="recipe-link empty-slot-link">
+                                    Aggiungi Ricette
+                                </a>
+                            {% endfor %}
+
+                        {% else %}
+                            <a href="{% url 'meal_slot_create' day=day_code meal_type=meal_code %}" class="create-slot-link">
+                                <i class="fas fa-plus-circle"></i> Pianifica
+                            </a>
+                        {% endif %}
+
+                    {% endwith %}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+    </div>
+    <div class="forms-container">
         <div class="action-box">
             <a href="{% url 'shopping_list' %}" class="big-link style-shopping">
-                <i>🛒</i>
+                <i class="fas fa-shopping-cart"></i>
                 <strong>Lista della Spesa</strong>
-                <small>(Calcolo Aggregato)</small>
+                <small>Aggrega gli ingredienti della settimana.</small>
             </a>
         </div>
-
         <div class="action-box">
             <a href="{% url 'recipe_create' %}" class="big-link style-create">
-                <i>✨</i>
-                <strong>Crea Nuova Ricetta</strong>
-                <small>(Aggiungi ingredienti)</small>
+                <i class="fas fa-utensils"></i>
+                <strong>Crea Ricetta</strong>
+                <small>Aggiungi un nuovo piatto al ricettario.</small>
             </a>
         </div>
-
         <div class="action-box">
-            <a href="{% url 'recipe_list' %}" class="big-link style-edit">
-                <i>📝</i>
-                <strong>Modifica Ricette</strong>
-                <small>(Scegli dalla lista)</small>
+            <a href="#" class="big-link style-edit">
+                <i class="fas fa-eraser"></i>
+                <strong>Cancella Piano</strong>
+                <small>Svuota tutti i pasti della settimana.</small>
             </a>
         </div>
-
     </div>
+    <style>
+        .meal-cell {
+            /* Per posizionare il bottone di modifica in alto a destra */
+            position: relative; 
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .edit-slot-link {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.8em;
+            color: var(--color-primary);
+            text-decoration: none;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .edit-slot-link:hover {
+            opacity: 1;
+        }
+        .create-slot-link {
+            color: var(--color-success);
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: auto; /* Allinea il link in basso */
+        }
+        .recipe-link {
+            margin-bottom: 3px;
+            font-size: 0.9em;
+        }
+    </style>
 
 </body>
 </html>

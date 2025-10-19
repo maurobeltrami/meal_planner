@@ -1,7 +1,7 @@
 # File: core/admin.py
 
 from django.contrib import admin
-from .models import Ingredient, Recipe, RecipeIngredient, WeeklyPlan
+from .models import Ingredient, Recipe, RecipeIngredient
 
 # --- 1. Definizione dell'Inline per RecipeIngredient ---
 # Permette di inserire/modificare gli ingredienti direttamente dalla pagina della Ricetta.
@@ -25,7 +25,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
 # Modelli semplici (registrazione standard)
 admin.site.register(Ingredient)
-admin.site.register(WeeklyPlan)
+
 
 # Registra la Ricetta usando la classe Admin modificata (con Inlines)
 admin.site.register(Recipe, RecipeAdmin) 

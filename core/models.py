@@ -1,5 +1,14 @@
 from django.db import models
 
+# Definizione delle Choices (utilizzate in MealSlot)
+DAY_CHOICES = [
+    ('MON', 'Lunedì'), ('TUE', 'Martedì'), ('WED', 'Mercoledì'),
+    ('THU', 'Giovedì'), ('FRI', 'Venerdì'), ('SAT', 'Sabato'), ('SUN', 'Domenica'),
+]
+MEAL_TYPE_CHOICES = [
+    ('LUN', 'Pranzo'), ('DIN', 'Cena'), ('BRK', 'Colazione'), ('SNK', 'Snack'),
+]
+
 # 1. Modello Ingrediente (Cosa compriamo?)
 class Ingredient(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="Nome Ingrediente")
@@ -28,28 +37,57 @@ class RecipeIngredient(models.Model):
     def __str__(self):
         return f"{self.recipe.name}: {self.quantity} {self.ingredient.unit} di {self.ingredient.name}"
 
-# 4. Modello Pianificazione Settimanale (Cosa cuciniamo e quando?)
-class WeeklyPlan(models.Model):
-    DAY_CHOICES = [
-        ('MON', 'Lunedì'), ('TUE', 'Martedì'), ('WED', 'Mercoledì'),
-        ('THU', 'Giovedì'), ('FRI', 'Venerdì'), ('SAT', 'Sabato'), ('SUN', 'Domenica'),
-    ]
-    MEAL_CHOICES = [
-        ('LUN', 'Pranzo'), ('DIN', 'Cena'), ('BRK', 'Colazione'), ('SNK', 'Snack'),
-    ]
-    
-    # Useremo solo il giorno della settimana e il tipo di pasto per semplicità iniziale
-    # In una versione avanzata useresti una data per tracciare settimane specifiche
-    
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, verbose_name="Ricetta Scelta")
-    day_of_week = models.CharField(max_length=3, choices=DAY_CHOICES, verbose_name="Giorno")
-    meal_type = models.CharField(max_length=3, choices=MEAL_CHOICES, verbose_name="Tipo Pasto")
-    
+# --------------------------------------------------------
+# 4. NUOVI MODELLI PER PIANIFICAZIONE MULTI-RICETTA
+# --------------------------------------------------------
+
+class MealSlot(models.Model):
+    """
+    Rappresenta un singolo slot pasto nella griglia settimanale (es. Lunedì - Cena).
+    È il CONTENITORE per una o più ricette.
+    """
+    day = models.CharField(max_length=3, choices=DAY_CHOICES, verbose_name="Giorno")
+    meal_type = models.CharField(max_length=3, choices=MEAL_TYPE_CHOICES, verbose_name="Tipo Pasto")
+
     class Meta:
-        # Ordiniamo il piano per giorno della settimana per una visualizzazione logica
-        ordering = ['day_of_week', 'meal_type'] 
-        verbose_name = "Pianificazione Settimanale"
-        verbose_name_plural = "Pianificazioni Settimanali"
+        # Garantisce che ci sia un solo slot pasto per giorno/tipo (es. una sola "Lunedì - Cena")
+        unique_together = ('day', 'meal_type')
+        ordering = ['day', 'meal_type']
+        verbose_name = "Slot Pasto"
+        verbose_name_plural = "Slot Pasti"
 
     def __str__(self):
-        return f"{self.get_day_of_week_display()} - {self.get_meal_type_display()}: {self.recipe.name}"
+        return f"{self.get_day_display()} - {self.get_meal_type_display()}"
+
+
+class MealRecipe(models.Model):
+    """
+    Collega una specifica ricetta a un MealSlot.
+    Questo permette l'associazione di molte ricette a un unico slot (uno slot a molte ricette).
+    """
+    # Lo slot a cui è assegnata questa ricetta
+    meal_slot = models.ForeignKey(
+        MealSlot, 
+        related_name='recipes', 
+        on_delete=models.CASCADE,
+        verbose_name="Slot Pasto"
+    )
+    # La ricetta che fa parte di questo slot
+    recipe = models.ForeignKey(
+        Recipe, 
+        on_delete=models.CASCADE,
+        verbose_name="Ricetta Scelta"
+    )
+    
+    # Campo opzionale per ordinare (es. 1=Primo, 2=Secondo, 3=Dolce)
+    # order = models.PositiveSmallIntegerField(default=0, verbose_name="Ordine nel Pasto")
+
+    class Meta:
+        # Aggiunge un vincolo: una ricetta non può essere aggiunta due volte allo stesso slot
+        unique_together = ('meal_slot', 'recipe')
+        ordering = ['meal_slot', 'id']
+        verbose_name = "Ricetta nel Pasto"
+        verbose_name_plural = "Ricette nel Pasto"
+
+    def __str__(self):
+        return f"{self.recipe.name} in {self.meal_slot}"
