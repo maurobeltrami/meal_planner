@@ -9,7 +9,7 @@
     --color-success: #78c558;
     /* Verde (Salvataggio, Crea Ricetta) */
     --color-shopping: #6a538d;
-    /* Viola scuro (Lista Spesa - Contro il bianco) */
+    /* Viola scuro (Lista Spesa) */
     --color-background: #f7f9fb;
     /* Sfondo molto chiaro */
     --color-light-gray: #eef1f5;
@@ -34,7 +34,7 @@ h1 {
     font-weight: 300;
 }
 
-/* Links e Bottoni */
+/* Links e Bottoni Generici */
 .back-link {
     display: inline-block;
     margin-bottom: 25px;
@@ -71,6 +71,11 @@ h1 {
     margin: 0 0 15px 0;
 }
 
+.helper-text {
+    margin-top: 10px;
+    font-size: 0.9em;
+    opacity: 0.7;
+}
 
 /* Stili Input */
 select,
@@ -96,7 +101,7 @@ input:focus {
 /* Bottoni di Azione */
 .form-section button,
 .submit-btn,
-#add-more-btn {
+.formset-add-btn {
     background-color: var(--color-success);
     color: white;
     padding: 12px 20px;
@@ -113,13 +118,21 @@ input:focus {
     transform: translateY(-1px);
 }
 
-#add-more-btn {
+/* Stile per i bottoni "Aggiungi" nei formset */
+.formset-add-btn {
     background-color: var(--color-accent);
+    margin-top: 20px;
 }
 
-#add-more-btn:hover {
+.formset-add-btn:hover {
     background-color: #ff8c2d;
     transform: translateY(-1px);
+}
+
+.full-width-btn {
+    /* Per i bottoni di salvataggio del form */
+    width: 100%;
+    margin-top: 30px;
 }
 
 /* ------------------------------------------------------------------- */
@@ -149,8 +162,6 @@ input:focus {
     border-bottom: 1px solid #eee;
     border-right: 1px solid #eee;
     min-height: 40px;
-    display: flex;
-    align-items: center;
     background-color: white;
     transition: background-color 0.15s;
 }
@@ -165,54 +176,104 @@ input:focus {
     font-weight: 700;
     color: var(--color-text);
     border-right: 2px solid #ccc;
+    display: flex;
+    align-items: center;
 }
 
-/* Link Ricetta nella Cella */
-.recipe-link {
+/* Stili per la Logica Multi-Ricetta */
+.meal-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.edit-slot-link {
+    /* Bottone Modifica/Aggiungi nello Slot */
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 0.8em;
     color: var(--color-primary);
     text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s;
+    opacity: 0.8;
+    font-weight: 600;
+    transition: opacity 0.2s;
 }
 
-.recipe-link:hover {
-    text-decoration: underline;
-    color: var(--color-accent);
+.edit-slot-link:hover {
+    opacity: 1;
 }
 
-/* Box Azioni (Sotto la Griglia) */
+.create-slot-link {
+    /* Link Pianifica quando lo slot è vuoto */
+    color: var(--color-success);
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: auto;
+}
+
+.recipe-name-display {
+    /* Nome della ricetta nella griglia */
+    margin-bottom: 3px;
+    font-size: 0.9em;
+    color: var(--color-text);
+}
+
+/* ------------------------------------------------------------------- */
+/* 🚀 STILI 4 TASTI AZIONI (Uniformità Assoluta) */
+/* ------------------------------------------------------------------- */
+
 .forms-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 25px;
+    /* CRUCIALE: Flexbox per la distribuzione uniforme della larghezza */
+    display: flex;
+    gap: 20px;
+    margin-top: 35px;
 
-    /* Modifiche per il padding laterale e il centraggio (da richiesta utente) */
     width: 90%;
     max-width: 1200px;
-    margin: 35px auto 35px auto;
+    margin: 35px auto;
     padding: 0 0 20px 0;
+    justify-content: center;
 }
 
 .action-box {
+    /* CRUCIALE: Assicura che ogni box abbia la stessa larghezza */
+    flex: 1 1 0;
+    max-width: 300px;
     padding: 0;
     border: none;
     box-shadow: none;
     background: transparent;
 }
 
+/* CORREZIONE FINALE: Forza il form a riempire lo spazio per il bottone Reset */
+.action-box form {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+
 .big-link {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    /* Padding uniforme per tutti gli elementi */
     padding: 30px;
     border-radius: 12px;
     font-weight: 700;
     text-decoration: none;
     transition: all 0.2s;
     color: white;
+
+    /* CRUCIALE: Forza l'altezza al 100% dell'action-box */
     height: 100%;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    /* Calcolo dell'altezza inclusivo di padding */
 }
 
 .big-link strong {
@@ -231,12 +292,11 @@ input:focus {
     margin-bottom: 5px;
 }
 
-/* STILI SPECIFICI PER LE AZIONI */
+/* STILI SPECIFICI PER LE AZIONI (Colori) */
 .style-shopping {
     background-color: var(--color-shopping);
 }
 
-/* Viola Scuro RISOLVE CONTRASTO */
 .style-shopping:hover {
     background-color: #554474;
     transform: translateY(-3px);
@@ -251,26 +311,58 @@ input:focus {
     transform: translateY(-3px);
 }
 
-.style-edit {
-    background-color: var(--color-primary);
+.style-list {
+    background-color: #ff9800;
 }
 
-.style-edit:hover {
-    background-color: #4a7aa0;
+/* Modifica Ricetta Esistente */
+.style-list:hover {
+    background-color: #e68900;
     transform: translateY(-3px);
 }
 
+.style-reset {
+    /* Pulsante Reset (è un <button> nel form) */
+    background-color: #f44336;
+    border: none;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    /* Eredita tutte le proprietà di .big-link (incluso padding e box-sizing) */
+}
+
+.style-reset:hover {
+    background-color: #d32f2f;
+    transform: translateY(-3px);
+}
+
+
 /* ------------------------------------------------------------------- */
-/* 🧾 STILI FORMSET (recipe_detail.html) - Per l'impaginazione ingredienti */
+/* 🧾 STILI FORMSET & LISTE */
 /* ------------------------------------------------------------------- */
+
 .formset-row {
     border-bottom: 1px solid #eef1f5;
     padding: 15px 0;
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    /* Ingrediente, Quantità, Cancella */
     gap: 20px;
     align-items: center;
+}
+
+/* Regole Grid per Ingredienti (Ricetta e Quantità) */
+.formset-row:not(.header-row) {
+    grid-template-columns: 3fr 1fr auto;
+}
+
+/* Regole Grid per Ricette (Solo Ricetta) */
+.formset-row:has(.field-input select[name$="recipe"]) {
+    grid-template-columns: 3fr auto;
+}
+
+.formset-row.header-row {
+    border-bottom: 2px solid var(--color-primary);
+    font-weight: bold;
+    padding: 10px 0;
 }
 
 .formset-row:nth-child(even) {
@@ -281,15 +373,17 @@ input:focus {
     border-bottom: none;
 }
 
-/* Assicurati che gli input siano puliti e allineati */
-.field-input {
-    padding: 0;
+.formset-header {
+    text-align: left;
+}
+
+.delete-header {
+    text-align: center;
 }
 
 .field-input select,
 .field-input input {
     margin-bottom: 0;
-    /* Rimuove lo spazio extra dentro la riga della griglia */
     max-width: 95%;
 }
 
@@ -301,6 +395,76 @@ input:focus {
 .delete-checkbox label {
     font-size: 0.8em;
 }
+
+/* Stili per la Lista Ricette (recipe_list.html) */
+.recipe-list-container {
+    padding: 10px 30px;
+}
+
+.recipe-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--color-light-gray);
+}
+
+.recipe-list-item:last-child {
+    border-bottom: none;
+}
+
+.recipe-name {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.edit-btn {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.edit-btn:hover {
+    background-color: #4a7aa0;
+}
+
+.edit-btn i {
+    margin-right: 5px;
+}
+
+/* Stili per la Lista della Spesa (shopping_list.html) */
+.shopping-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+.shopping-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed #e0e0e0;
+    font-size: 1.1em;
+}
+
+.shopping-item:last-child {
+    border-bottom: none;
+}
+
+.item-name {
+    font-weight: 500;
+}
+
+.item-quantity {
+    color: var(--color-primary);
+    font-weight: bold;
+}
+
 
 /* ------------------------------------------------------------------- */
 /* 📱 MEDIA QUERIES (Design Mobile) */
@@ -325,7 +489,6 @@ input:focus {
         box-shadow: none;
         overflow-x: auto;
         width: 650px;
-        /* Larghezza fissa per forzare lo scroll orizzontale */
     }
 
     .header,
@@ -335,18 +498,34 @@ input:focus {
         white-space: nowrap;
     }
 
-    /* 3. Layout Tre Azioni Rapide */
+    /* 3. Layout Quattro Azioni Rapide (Stacking) */
     .forms-container {
+        /* Passiamo a grid per lo stacking verticale in mobile */
+        display: grid;
         grid-template-columns: 1fr;
         gap: 15px;
         margin: 20px auto;
         width: 100%;
     }
 
+    .action-box {
+        max-width: 100%;
+    }
+
+    .action-box form {
+        height: auto;
+    }
+
     .big-link {
         padding: 20px;
         flex-direction: row;
         justify-content: flex-start;
+        /* Reimposta l'altezza per il layout orizzontale in mobile */
+        height: auto;
+    }
+
+    .style-reset {
+        height: auto;
     }
 
     .big-link i {
@@ -372,9 +551,23 @@ input:focus {
         padding: 10px 0;
     }
 
+    .formset-row:has(.field-input select[name$="recipe"]) {
+        grid-template-columns: 1fr;
+    }
+
+    .formset-row:not(.header-row) {
+        grid-template-columns: 1fr 1fr;
+    }
+
     .delete-checkbox {
         grid-column: 1 / span 2;
         text-align: left;
+        margin-top: -10px;
+    }
+
+    .formset-row:has(.field-input select[name$="recipe"]) .delete-checkbox {
+        grid-column: 1 / span 1;
+        text-align: right;
     }
 
     .form-section {

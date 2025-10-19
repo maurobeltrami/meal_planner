@@ -1,35 +1,39 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>{{ title }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { color: #333; }
-        ul { list-style: none; padding: 0; }
-        li { background: #f9f9f9; margin-bottom: 8px; padding: 10px; border-left: 5px solid #007bff; }
-        .quantity { font-weight: bold; color: #d9534f; margin-right: 5px; }
-        .unit { color: #5cb85c; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpesaFacile | Lista della Spesa</title>
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+    
+    <a href="{% url 'weekly_plan' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Torna al Piano Settimanale
+    </a>
+
     <h1>🛒 Lista della Spesa Aggregata</h1>
 
-    {% if shopping_list %}
-        <ul>
-        {% for item in shopping_list %}
-            <li>
-                <span class="quantity">{{ item.total_quantity|floatformat:1 }}</span> 
-                <span class="unit">{{ item.ingredient__unit }}</span> 
-                di 
-                <strong>{{ item.ingredient__name }}</strong>
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>Il piano settimanale è vuoto. Aggiungi ricette per generare la lista!</p>
-    {% endif %}
+    <div class="form-section">
+        {% if shopping_list %}
+            <h3>Ingredienti Necessari</h3>
+            
+            <ul class="shopping-list">
+            {% for item in shopping_list %}
+                <li class="shopping-item">
+                    <span class="item-name">{{ item.name }}</span> 
+                    <span class="item-quantity">({{ item.quantity|floatformat:"-2" }} {{ item.unit }})</span>
+                </li>
+            {% endfor %}
+            </ul>
+        
+        {% else %}
+            <p>Nessun ingrediente trovato. Assicurati di aver pianificato ricette per la settimana!</p>
+        {% endif %}
+    </div>
 
-    <p>Nota: I decimali sono arrotondati a una cifra per chiarezza.</p>
 </body>
 </html>

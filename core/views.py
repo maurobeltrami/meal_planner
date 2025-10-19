@@ -1,176 +1,251 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.forms import inlineformset_factory
 from django.urls import reverse
+from django.db.models import Sum 
 from .models import (
     Recipe, Ingredient, RecipeIngredient, 
     MealSlot, MealRecipe, 
     DAY_CHOICES, MEAL_TYPE_CHOICES
 )
-# Devi assicurarti che IngredientForm e RecipeForm esistano e siano importabili da .forms
-from .forms import RecipeForm, IngredientForm 
+from .forms import RecipeForm, IngredientForm
+from django.http import Http404, HttpResponse
+
+# ======================================================================
+# FUNZIONE DI UTILITÀ: Costruzione della Griglia Settimanale
+# ======================================================================
+
+def build_weekly_grid():
+    """Costruisce la struttura dati per la griglia settimanale."""
+    
+    meal_grid = {
+        day_code: {
+            'name': day_name,
+            'meals': {meal_code: None for meal_code, _ in MEAL_TYPE_CHOICES}
+        } 
+        for day_code, day_name in DAY_CHOICES
+    }
+
+    all_slots = MealSlot.objects.prefetch_related('recipes').all()
+
+    for slot in all_slots:
+        
+        # CORRETTO: Filtra MealRecipe usando 'meal_slot' (il nome del campo)
+        meal_recipes = MealRecipe.objects.filter(meal_slot=slot).select_related('recipe')
+        recipes_list = [mr.recipe for mr in meal_recipes]
+        
+        if not recipes_list and not slot:
+             continue 
+        
+        slot_data = {
+            'slot_obj': slot,
+            'recipes': recipes_list
+        }
+        
+        try:
+            meal_grid[slot.day]['meals'][slot.meal_type] = slot_data
+        except KeyError:
+            continue
+
+    return meal_grid
 
 
-# ----------------------------------------------------------------------
-# VISTA PRINCIPALE: PIANIFICATORE SETTIMANALE
-# ----------------------------------------------------------------------
+# ======================================================================
+# VISTE PRINCIPALI
+# ======================================================================
 
 def weekly_plan(request):
-    """
-    Mostra la griglia settimanale, recuperando tutti gli slot pasto e le ricette associate.
-    """
+    """Visualizza il piano settimanale e la griglia dei pasti."""
     
-    # Prepara la query per recuperare Slot Pasto e tutte le Ricette collegate
-    # L'uso di prefetch_related riduce le query al database.
-    all_meal_slots = MealSlot.objects.prefetch_related('recipes__recipe').all()
-    
-    # Inizializzazione della griglia completa (necessaria per garantire l'ordine)
-    meal_grid = {}
-
-    # 1. Inizializza tutte le celle della griglia come None
-    for day_code, day_name in DAY_CHOICES:
-        meal_grid[day_code] = {'meals': {}}
-        for meal_code, meal_name in MEAL_TYPE_CHOICES:
-            meal_grid[day_code]['meals'][meal_code] = None 
-    
-    # 2. Popola la griglia con i dati reali
-    for slot in all_meal_slots:
-        day_code = slot.day
-        meal_code = slot.meal_type
-        
-        # Lista delle ricette collegate a questo slot
-        recipes_for_slot = [mr.recipe for mr in slot.recipes.all()] 
-        
-        meal_grid[day_code]['meals'][meal_code] = {
-            'slot_obj': slot,
-            'recipes': recipes_for_slot, # Contiene N ricette per questo pasto
-        }
-
     context = {
         'day_choices': DAY_CHOICES,
         'meal_types': MEAL_TYPE_CHOICES,
-        'meal_grid': meal_grid,
+        'meal_grid': build_weekly_grid(),
     }
-    
-    # Nota: Stai utilizzando il filtro get_item nel template.
-    # Assicurati di aver corretto il Template Tag come da suggerimenti precedenti.
     return render(request, 'core/weekly_plan.html', context)
 
 
-# ----------------------------------------------------------------------
-# VISTE GESTIONE SLOT PASTO (MULTI-RICETTA)
-# ----------------------------------------------------------------------
+# ======================================================================
+# VISTE RICETTE (Creazione, Dettaglio, Lista)
+# ======================================================================
 
-# Definisce il Formset per gestire le ricette all'interno di un MealSlot
-MealRecipeFormSet = inlineformset_factory(
-    MealSlot, 
-    MealRecipe, 
-    fields=('recipe',), # Campo 'recipe' per selezionare la ricetta
-    extra=2, # Inizia con 2 righe vuote per facilitare l'aggiunta
-    can_delete=True
+RecipeIngredientFormSet = inlineformset_factory(
+    Recipe, RecipeIngredient, 
+    fields=('ingredient', 'quantity'), 
+    extra=1, can_delete=True
 )
 
-
-def meal_slot_update(request, pk):
-    """
-    Permette di aggiungere/rimuovere ricette (MealRecipe) in uno slot pasto esistente (MealSlot).
-    """
-    meal_slot = get_object_or_404(MealSlot, pk=pk)
+def recipe_create(request):
+    """Crea una nuova ricetta con i suoi ingredienti."""
     
     if request.method == 'POST':
-        formset = MealRecipeFormSet(request.POST, instance=meal_slot)
-        if formset.is_valid():
-            formset.save()
-            return redirect('weekly_plan')
+        form = RecipeForm(request.POST)
+        formset = RecipeIngredientFormSet(request.POST, instance=Recipe())
+        
+        if form.is_valid() and formset.is_valid():
+            recipe = form.save()
+            formset = RecipeIngredientFormSet(request.POST, instance=recipe)
+            if formset.is_valid(): 
+                formset.instance = recipe
+                formset.save()
+                return redirect('recipe_detail', pk=recipe.pk)
     else:
-        formset = MealRecipeFormSet(instance=meal_slot)
+        form = RecipeForm()
+        formset = RecipeIngredientFormSet(instance=Recipe())
         
     context = {
-        'meal_slot': meal_slot,
+        'form': form,
         'formset': formset,
-        'title': f"Modifica Pasto: {meal_slot}",
-    }
-    # Devi creare il template: core/templates/core/meal_slot_form.html
-    return render(request, 'core/meal_slot_form.html', context)
-
-
-def meal_slot_create(request, day, meal_type):
-    """
-    Crea un nuovo MealSlot se non esiste (o lo recupera), poi reindirizza alla modifica.
-    """
-    
-    # 1. Tenta di trovare lo slot
-    try:
-        meal_slot = MealSlot.objects.get(day=day, meal_type=meal_type)
-        
-    # 2. Se non esiste, lo crea
-    except MealSlot.DoesNotExist:
-        meal_slot = MealSlot.objects.create(day=day, meal_type=meal_type)
-        
-    # 3. Reindirizza alla vista di aggiornamento per aggiungere le ricette
-    return redirect('meal_slot_update', pk=meal_slot.pk)
-
-
-# ----------------------------------------------------------------------
-# VISTA RICETTA (Placeholder)
-# ----------------------------------------------------------------------
-
-def recipe_detail(request, pk=None):
-    """
-    Placeholder per la vista di dettaglio/creazione/modifica ricetta (RecipeForm e RecipeIngredient Formset).
-    Questa vista richiede IngredientForm per la creazione al volo.
-    """
-    # Esempio per evitare errori, assumendo che i form siano disponibili
-    
-    recipe_instance = None
-    if pk:
-        recipe_instance = get_object_or_404(Recipe, pk=pk)
-        
-    RecipeIngredientFormSet = inlineformset_factory(
-        Recipe, RecipeIngredient, fields=('ingredient', 'quantity'), extra=1, can_delete=True
-    )
-
-    if request.method == 'POST':
-        # Gestione form Aggiungi Ingrediente al volo
-        if request.POST.get('action') == 'add_ingredient':
-            ingredient_form = IngredientForm(request.POST)
-            if ingredient_form.is_valid():
-                ingredient_form.save()
-                # Reindirizza alla pagina corrente per aggiornare i dropdown
-                return redirect(request.path_info) 
-        
-        # Gestione Form Ricetta e Formset Ingredienti
-        recipe_form = RecipeForm(request.POST, instance=recipe_instance)
-        formset = RecipeIngredientFormSet(request.POST, instance=recipe_instance)
-
-        if recipe_form.is_valid() and formset.is_valid():
-            new_recipe = recipe_form.save()
-            formset.instance = new_recipe
-            formset.save()
-            return redirect('weekly_plan')
-
-    else:
-        recipe_form = RecipeForm(instance=recipe_instance)
-        formset = RecipeIngredientFormSet(instance=recipe_instance)
-        ingredient_form = IngredientForm()
-
-    context = {
-        'recipe_form': recipe_form,
-        'formset': formset,
-        'ingredient_form': ingredient_form,
-        'title': f"Modifica Ricetta: {recipe_instance.name}" if recipe_instance else "Crea Nuova Ricetta",
-        'is_new': pk is None,
+        'title': 'Crea Nuova Ricetta'
     }
     return render(request, 'core/recipe_detail.html', context)
 
 
-# ----------------------------------------------------------------------
-# VISTA LISTA SPESA (Placeholder)
-# ----------------------------------------------------------------------
+def recipe_detail(request, pk):
+    """Visualizza o modifica una ricetta esistente."""
+    
+    recipe = get_object_or_404(Recipe, pk=pk)
+    
+    if request.method == 'POST':
+        form = RecipeForm(request.POST, instance=recipe)
+        formset = RecipeIngredientFormSet(request.POST, instance=recipe)
+        
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            return redirect('recipe_detail', pk=recipe.pk)
+    else:
+        form = RecipeForm(instance=recipe)
+        formset = RecipeIngredientFormSet(instance=recipe)
+        
+    context = {
+        'form': form,
+        'formset': formset,
+        'title': f'Modifica Ricetta: {recipe.name}',
+        'recipe': recipe
+    }
+    return render(request, 'core/recipe_detail.html', context)
+
+
+def recipe_list(request):
+    """Visualizza l'elenco di tutte le ricette."""
+    
+    recipes = Recipe.objects.all().order_by('name')
+    context = {'recipes': recipes, 'title': 'Elenco Ricette'}
+    return render(request, 'core/recipe_list.html', context)
+
+
+# ======================================================================
+# VISTE SLOT PASTO (Creazione, Aggiornamento)
+# ======================================================================
+
+MealRecipeFormSet = inlineformset_factory(
+    MealSlot, MealRecipe, 
+    fields=('recipe',), 
+    extra=1, can_delete=True
+)
+
+
+def meal_slot_create(request, day, meal_type):
+    """Crea un nuovo MealSlot e assegna le ricette."""
+    
+    day_name = dict(DAY_CHOICES).get(day)
+    meal_name = dict(MEAL_TYPE_CHOICES).get(meal_type)
+    if not day_name or not meal_name:
+        raise Http404("Giorno o tipo di pasto non valido.")
+
+    slot, created = MealSlot.objects.get_or_create(
+        day=day, 
+        meal_type=meal_type
+    )
+
+    if request.method == 'POST':
+        formset = MealRecipeFormSet(request.POST, instance=slot)
+        if formset.is_valid():
+            formset.save()
+            return redirect('weekly_plan')
+    else:
+        formset = MealRecipeFormSet(instance=slot)
+
+    context = {
+        'slot': slot,
+        'formset': formset,
+        'title': f'Pianifica: {meal_name} del {day_name}',
+        'created': created 
+    }
+    return render(request, 'core/meal_slot_form.html', context)
+
+
+def meal_slot_update(request, pk):
+    """Aggiorna un MealSlot esistente e le sue ricette."""
+    
+    slot = get_object_or_404(MealSlot, pk=pk)
+    
+    if request.method == 'POST':
+        formset = MealRecipeFormSet(request.POST, instance=slot)
+        if formset.is_valid():
+            formset.save()
+            return redirect('weekly_plan')
+    else:
+        formset = MealRecipeFormSet(instance=slot)
+
+    day_name = dict(DAY_CHOICES).get(slot.day)
+    meal_name = dict(MEAL_TYPE_CHOICES).get(slot.meal_type)
+    
+    context = {
+        'slot': slot,
+        'formset': formset,
+        'title': f'Modifica: {meal_name} del {day_name}',
+        'created': False 
+    }
+    return render(request, 'core/meal_slot_form.html', context)
+
+
+# ======================================================================
+# VISTE AZIONI RAPIDE
+# ======================================================================
+
+def reset_weekly_plan(request):
+    """Azione rapida: Cancella tutti i MealSlot."""
+    
+    if request.method == 'POST':
+        MealSlot.objects.all().delete()
+        return redirect('weekly_plan')
+    
+    return redirect('weekly_plan')
+
 
 def shopping_list(request):
     """
-    Vista per generare la lista della spesa aggregando gli ingredienti.
+    Genera la lista della spesa aggregando gli ingredienti, quantità e unità di misura
+    dalle ricette pianificate.
     """
-    # Logica della lista della spesa non inclusa per brevità, ma la vista è definita.
-    context = {'title': 'Lista della Spesa Aggregata'}
+    
+    planned_recipe_ids = MealRecipe.objects.values_list('recipe__id', flat=True).distinct()
+
+    # Aggrega quantità, raggruppando per nome dell'ingrediente e per la sua unità di misura.
+    # Usiamo 'ingredient__unit' per attraversare la relazione Ingredient.
+    shopping_items = (
+        RecipeIngredient.objects
+        .filter(recipe__id__in=planned_recipe_ids) 
+        .values('ingredient__name', 'ingredient__unit') 
+        .annotate(total_quantity=Sum('quantity'))
+        .order_by('ingredient__name', 'ingredient__unit') 
+    )
+
+    # Preparazione dei dati per il template
+    shopping_list = []
+    for item in shopping_items:
+        # Recupera l'unità di misura; usiamo una stringa vuota se è None
+        unit = item['ingredient__unit'] if item['ingredient__unit'] else ''
+        
+        shopping_list.append({
+            'name': item['ingredient__name'],
+            'quantity': item['total_quantity'], # Passiamo la quantità come numero
+            'unit': unit                       # Passiamo l'unità
+        })
+
+    context = {
+        'title': 'Lista della Spesa Aggregata',
+        'shopping_list': shopping_list,
+    }
     return render(request, 'core/shopping_list.html', context)

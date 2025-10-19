@@ -1,5 +1,7 @@
 {% load static %}
-{% load core_tags %} <!DOCTYPE html>
+{% load core_tags %}
+
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -31,17 +33,17 @@
                         {% if slot_data and slot_data.slot_obj %}
                             
                             <a href="{% url 'meal_slot_update' pk=slot_data.slot_obj.pk %}" class="edit-slot-link" title="Modifica Pasto">
-                                <i class="fas fa-edit"></i> 
+                                <i class="fas fa-edit"></i> Modifica/Aggiungi Ricette
                             </a>
                             
                             {% for recipe in slot_data.recipes %}
-                                <a href="{% url 'recipe_update' pk=recipe.pk %}" class="recipe-link">
+                                <span class="recipe-name-display">
                                     {{ recipe.name }}
-                                </a>
+                                </span>
                             {% empty %}
-                                <a href="{% url 'meal_slot_update' pk=slot_data.slot_obj.pk %}" class="recipe-link empty-slot-link">
-                                    Aggiungi Ricette
-                                </a>
+                                <span class="recipe-name-display">
+                                    Nessuna Ricetta
+                                </span>
                             {% endfor %}
 
                         {% else %}
@@ -57,6 +59,7 @@
 
     </div>
     <div class="forms-container">
+        
         <div class="action-box">
             <a href="{% url 'shopping_list' %}" class="big-link style-shopping">
                 <i class="fas fa-shopping-cart"></i>
@@ -64,53 +67,35 @@
                 <small>Aggrega gli ingredienti della settimana.</small>
             </a>
         </div>
+        
         <div class="action-box">
             <a href="{% url 'recipe_create' %}" class="big-link style-create">
                 <i class="fas fa-utensils"></i>
-                <strong>Crea Ricetta</strong>
+                <strong>Crea Nuova Ricetta</strong>
                 <small>Aggiungi un nuovo piatto al ricettario.</small>
             </a>
         </div>
+        
         <div class="action-box">
-            <a href="#" class="big-link style-edit">
-                <i class="fas fa-eraser"></i>
-                <strong>Cancella Piano</strong>
-                <small>Svuota tutti i pasti della settimana.</small>
+            <a href="{% url 'recipe_list' %}" class="big-link style-list">
+                <i class="fas fa-list"></i>
+                <strong>Modifica Ricetta Esistente</strong>
+                <small>Visualizza e modifica tutte le ricette nel ricettario.</small>
             </a>
         </div>
+        
+        <div class="action-box">
+            <form method="POST" action="{% url 'reset_weekly_plan' %}">
+                {% csrf_token %}
+                <button type="submit" class="big-link style-reset" 
+                        onclick="return confirm('Sei sicuro di voler resettare l\'intero piano settimanale? Questa azione è irreversibile.');">
+                    <i class="fas fa-trash-alt"></i>
+                    <strong>Reset Settimana</strong>
+                    <small>Svuota tutti i pasti pianificati.</small>
+                </button>
+            </form>
+        </div>
+        
     </div>
-    <style>
-        .meal-cell {
-            /* Per posizionare il bottone di modifica in alto a destra */
-            position: relative; 
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .edit-slot-link {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            font-size: 0.8em;
-            color: var(--color-primary);
-            text-decoration: none;
-            opacity: 0.6;
-            transition: opacity 0.2s;
-        }
-        .edit-slot-link:hover {
-            opacity: 1;
-        }
-        .create-slot-link {
-            color: var(--color-success);
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: auto; /* Allinea il link in basso */
-        }
-        .recipe-link {
-            margin-bottom: 3px;
-            font-size: 0.9em;
-        }
-    </style>
-
-</body>
+    </body>
 </html>

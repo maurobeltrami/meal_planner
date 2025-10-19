@@ -24,69 +24,45 @@
             
             {{ recipe_form.as_p }}
             
-            <hr style="margin: 25px 0;">
+            <hr>
 
             <h3>Ingredienti e Quantità</h3>
             
             {{ formset.management_form }}
             
             <div id="ingredient-formset-container">
-                <div class="formset-row header-row" style="grid-template-columns: 3fr 1fr 1fr; gap: 10px; padding: 10px 0;">
-                    <div style="font-weight: bold;">Ingrediente</div>
-                    <div style="font-weight: bold;">Quantità</div>
-                    <div style="font-weight: bold; text-align: center;">Cancella</div>
+                <div class="formset-row header-row">
+                    <div class="formset-header">Ingrediente</div>
+                    <div class="formset-header">Quantità</div>
+                    <div class="formset-header delete-header">Cancella</div>
                 </div>
 
                 {% for form in formset %}
                     <div class="formset-row formset-form {% if form.instance.pk %}existing-row{% else %}new-row{% endif %}">
-                        
-                        <div class="field-input">
-                            {{ form.ingredient.errors }}
-                            {{ form.ingredient }}
-                        </div>
-
-                        <div class="field-input">
-                            {{ form.quantity.errors }}
-                            {{ form.quantity }}
-                        </div>
-                        
-                        <div class="delete-checkbox">
-                            {{ form.id }}
-                            {{ form.DELETE }}
-                            {{ form.DELETE.label_tag }}
-                        </div>
+                        <div class="field-input">{{ form.ingredient.errors }}{{ form.ingredient }}</div>
+                        <div class="field-input">{{ form.quantity.errors }}{{ form.quantity }}</div>
+                        <div class="delete-checkbox">{{ form.id }}{{ form.DELETE }}{{ form.DELETE.label_tag }}</div>
                     </div>
                 {% endfor %}
                 
                 {% with form=formset.empty_form %}
                 <div class="formset-row formset-form new-row" id="empty-ingredient-form" style="display: none;">
-                    
-                    <div class="field-input">
-                        {{ form.ingredient }}
-                    </div>
-                    
-                    <div class="field-input">
-                        {{ form.quantity }}
-                    </div>
-                    
-                    <div class="delete-checkbox">
-                        {{ form.id }} 
-                        {{ form.DELETE }}
-                        {{ form.DELETE.label_tag }}
-                    </div>
+                    <div class="field-input">{{ form.ingredient }}</div>
+                    <div class="field-input">{{ form.quantity }}</div>
+                    <div class="delete-checkbox">{{ form.id }}{{ form.DELETE }}{{ form.DELETE.label_tag }}</div>
                 </div>
                 {% endwith %}
             </div>
 
-            <button type="button" id="add-more-btn">
+            <button type="button" id="add-more-btn" class="formset-add-btn">
                 <i class="fas fa-plus"></i> Aggiungi altro Ingrediente
             </button>
 
-            <button type="submit" class="submit-btn" style="width: 100%; margin-top: 30px;">Salva Ricetta Completa</button>
+            <button type="submit" class="submit-btn full-width-btn">Salva Ricetta Completa</button>
         </form>
     </div>
     
-    <div class="form-section" style="margin-top: 20px;">
+    <div class="form-section">
         <h3>➕ Crea Nuovo Ingrediente</h3>
         <form method="post" action="{{ request.path_info }}">
             {% csrf_token %}
@@ -94,10 +70,10 @@
             
             {{ ingredient_form.as_p }}
 
-            <button type="submit" class="submit-btn" style="width: auto;">
+            <button type="submit" class="submit-btn">
                 Aggiungi Ingrediente
             </button>
-            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.7;">Dopo aver creato il nuovo ingrediente, ricarica la pagina per vederlo nel menu a tendina.</p>
+            <p class="helper-text">Dopo aver creato il nuovo ingrediente, ricarica la pagina per vederlo nel menu a tendina.</p>
         </form>
     </div>
     
@@ -106,12 +82,9 @@
             const addButton = document.getElementById('add-more-btn');
             const container = document.getElementById('ingredient-formset-container');
             const emptyForm = document.getElementById('empty-ingredient-form');
-            
-            // Assicurati che l'ID del TOTAL_FORMS corrisponda a quello generato da Django
             const totalForms = document.getElementById('id_ingredients_list-TOTAL_FORMS');
             let formIdx = parseInt(totalForms.value);
 
-            // Funzione che aggiorna gli ID, i NOMI e i FOR di tutti i campi
             function updateElementIndex(el, prefix, index) {
                 const nameRegex = new RegExp('(' + prefix + '-\\d+)');
                 const idRegex = new RegExp('(' + prefix + '_\\d+)');
@@ -128,20 +101,15 @@
                 }
             }
 
-            // Funzione di gestione click del pulsante
             addButton.addEventListener('click', function() {
-                // 1. Clona la riga template (empty-ingredient-form)
                 const newForm = emptyForm.cloneNode(true);
                 
-                // 2. Aggiorna ID e NAME per la nuova riga
                 newForm.id = 'id_ingredients_list-' + formIdx;
-                newForm.style.display = 'grid'; // Rendi visibile
+                newForm.style.display = 'grid'; 
 
-                // Itera su tutti i campi all'interno della nuova riga
                 newForm.querySelectorAll('*').forEach(function(element) {
                     updateElementIndex(element, 'ingredients_list', formIdx);
                     
-                    // Pulisce i valori (eccetto i campi nascosti)
                     if (element.tagName === 'INPUT' || element.tagName === 'SELECT') {
                         if (element.type !== 'hidden' && element.name.indexOf('-DELETE') === -1) {
                             element.value = '';
@@ -149,18 +117,14 @@
                     }
                 });
                 
-                // 3. Aggiungi il nuovo form prima del template vuoto
                 container.appendChild(newForm);
                 
-                // 4. Aggiorna il numero totale di form (CRUCIALE)
                 formIdx++;
                 totalForms.value = formIdx;
                 
-                // 5. Focus sul primo campo della nuova riga
                 newForm.querySelector('select, input').focus();
             });
         });
     </script>
-
 </body>
 </html>

@@ -24,57 +24,30 @@
             
             <div id="recipe-formset-container">
                 <div class="formset-row header-row">
-                    <div style="font-weight: bold;">Ricetta</div>
-                    <div style="font-weight: bold; text-align: center;">Cancella</div>
+                    <div class="formset-header">Ricetta</div>
+                    <div class="formset-header delete-header">Cancella</div>
                 </div>
 
                 {% for form in formset %}
-                    <div class="formset-row formset-form {% if form.instance.pk %}existing-row{% else %}new-row{% endif %}" id="id_{{ forloop.counter0 }}">
-                        
-                        <div class="field-input">
-                            {{ form.recipe.label_tag }}
-                            {{ form.recipe }}
-                            {{ form.recipe.errors }}
-                        </div>
-                        
-                        {% if form.instance.pk %}
-                            {{ form.id }}
-                        {% endif %}
-                        
-                        <div class="delete-checkbox">
-                            {{ form.DELETE }}
-                            {{ form.DELETE.label_tag }}
-                        </div>
+                    <div class="formset-row formset-form {% if form.instance.pk %}existing-row{% else %}new-row{% endif %}">
+                        <div class="field-input">{{ form.recipe.label_tag }}{{ form.recipe }}{{ form.recipe.errors }}</div>
+                        <div class="delete-checkbox">{{ form.DELETE }}{{ form.DELETE.label_tag }}</div>
                     </div>
                 {% endfor %}
                 
                 {% with form=formset.empty_form %}
                 <div class="formset-row formset-form new-row" id="empty-form" style="display: none;">
-                    
-                    <div class="field-input">
-                        {{ form.recipe.label_tag }}
-                        {{ form.recipe }}
-                    </div>
-                    
-                    <div class="delete-checkbox">
-                        {{ form.DELETE }}
-                        {{ form.DELETE.label_tag }}
-                    </div>
-                    
-                    {{ form.id }} 
+                    <div class="field-input">{{ form.recipe.label_tag }}{{ form.recipe }}</div>
+                    <div class="delete-checkbox">{{ form.DELETE }}{{ form.DELETE.label_tag }}{{ form.id }}</div>
                 </div>
                 {% endwith %}
-                
             </div>
 
-            <div class="form-actions" style="margin-top: 25px;">
-                <button type="button" id="add-recipe-btn" class="submit-btn" style="background-color: var(--color-accent); margin-bottom: 15px;">
+            <div class="form-actions">
+                <button type="button" id="add-recipe-btn" class="formset-add-btn">
                     <i class="fas fa-plus"></i> Aggiungi altra Ricetta
                 </button>
-                
-                <button type="submit" class="submit-btn" style="width: 100%;">
-                    Salva Modifiche al Pasto
-                </button>
+                <button type="submit" class="submit-btn full-width-btn">Salva Modifiche al Pasto</button>
             </div>
         </form>
     </div>
@@ -84,22 +57,16 @@
             const addButton = document.getElementById('add-recipe-btn');
             const container = document.getElementById('recipe-formset-container');
             const emptyForm = document.getElementById('empty-form');
-            // Elemento che contiene il numero totale di form
-            const totalForms = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+            const totalForms = document.getElementById('id_mealrecipe_set-TOTAL_FORMS');
             let formIdx = parseInt(totalForms.value);
 
-            // Funzione che aggiorna gli ID, i NOMI e i FOR di tutti i campi
             function updateElementIndex(el, prefix, index) {
                 const nameRegex = new RegExp('(' + prefix + '-\\d+)');
                 const idRegex = new RegExp('(' + prefix + '_\\d+)');
 
-                // Aggiorna l'attributo 'for' del label
                 if (el.tagName === 'LABEL') {
                     el.htmlFor = el.htmlFor.replace(nameRegex, prefix + '-' + index);
-                    return;
                 }
-                
-                // Aggiorna gli attributi 'id' e 'name' del campo input/select
                 if (el.name) {
                     el.name = el.name.replace(nameRegex, prefix + '-' + index);
                 }
@@ -108,20 +75,15 @@
                 }
             }
 
-            // Funzione di gestione click del pulsante
             addButton.addEventListener('click', function() {
-                // 1. Clona la riga template (empty-form)
                 const newForm = emptyForm.cloneNode(true);
                 
-                // 2. Aggiorna ID e NAME per la nuova riga (con l'indice corrente)
-                newForm.id = 'id_' + formIdx;
-                newForm.style.display = 'grid'; // Rendi visibile
+                newForm.id = 'id_mealrecipe_set-' + formIdx;
+                newForm.style.display = 'grid'; 
 
-                // Itera su tutti i campi all'interno della nuova riga
                 newForm.querySelectorAll('*').forEach(function(element) {
-                    updateElementIndex(element, '{{ formset.prefix }}', formIdx);
+                    updateElementIndex(element, 'mealrecipe_set', formIdx);
                     
-                    // Pulisce i valori per i nuovi form (eccetto i campi nascosti come DELETE)
                     if (element.tagName === 'INPUT' || element.tagName === 'SELECT') {
                         if (element.type !== 'hidden' && element.name.indexOf('-DELETE') === -1) {
                             element.value = '';
@@ -129,43 +91,14 @@
                     }
                 });
                 
-                // 3. Aggiungi il nuovo form prima del template vuoto
-                container.insertBefore(newForm, emptyForm);
+                container.appendChild(newForm);
                 
-                // 4. Aggiorna il numero totale di form (CRUCIALE)
                 formIdx++;
                 totalForms.value = formIdx;
                 
-                // 5. (Opzionale) Focus sul primo campo della nuova riga
                 newForm.querySelector('select').focus();
             });
         });
     </script>
-    
-    <style>
-        .formset-row.header-row {
-            border-bottom: 2px solid var(--color-primary);
-            padding: 10px 0;
-            gap: 15px; /* Spazio ridotto per intestazioni */
-        }
-        .formset-row {
-            grid-template-columns: 3fr 1fr; /* Ricetta e Cancella */
-            gap: 15px;
-            align-items: center;
-        }
-        .field-input {
-            width: 100%;
-        }
-        .delete-checkbox {
-            text-align: center;
-        }
-        /* Assicurati che il display grid funzioni anche per il template e il clonaggio */
-        .formset-row {
-            display: grid; 
-            border-bottom: 1px solid #eef1f5; 
-            padding: 15px 0;
-        }
-    </style>
-
 </body>
 </html>
