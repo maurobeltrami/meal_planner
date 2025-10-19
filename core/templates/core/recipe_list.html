@@ -1,4 +1,5 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -10,25 +11,32 @@
 </head>
 <body>
     
-    <a href="{% url 'weekly_plan' %}" class="back-link">⬅️ Torna al Piano Settimanale</a>
-    
-    <h1>🍽️ {{ title }}</h1>
+    <a href="{% url 'weekly_plan' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Torna al Piano Settimanale
+    </a>
 
-    <div class="form-section recipe-list-container">
-        
+    <h1>📚 {{ title }}</h1>
+
+    <div class="form-section">
         {% if recipes %}
-            {% for recipe in recipes %}
-                <div class="recipe-list-item">
-                    <span class="recipe-name">{{ recipe.name }}</span>
-                    <a href="{% url 'recipe_update' pk=recipe.pk %}" class="edit-btn">
-                        <i class="fas fa-pen"></i> Modifica
-                    </a>
-                </div>
-            {% endfor %}
+            <div class="recipe-list-container">
+                {% for recipe in recipes %}
+                    <div class="recipe-list-item">
+                        <span class="recipe-name">{{ recipe.name }}</span>
+                        <a href="{% url 'recipe_detail' pk=recipe.pk %}" class="edit-btn">
+                            <i class="fas fa-edit"></i> Modifica
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
         {% else %}
             <p>Nessuna ricetta trovata nel ricettario. Inizia creando una nuova ricetta!</p>
         {% endif %}
-
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="{% url 'recipe_create' %}" class="submit-btn">
+                <i class="fas fa-plus"></i> Crea Nuova Ricetta
+            </a>
+        </div>
     </div>
 
 </body>

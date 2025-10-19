@@ -1,5 +1,4 @@
 {% load static %}
-{% load core_tags %}
 
 <!DOCTYPE html>
 <html lang="it">
@@ -14,88 +13,91 @@
     
     <h1>🍽️ SpesaFacile | Piano Settimanale dei Pasti</h1>
 
-    <div class="grid-container">
-        
-        <div class="header">Giorno</div>
-        {% for meal_code, meal_name in meal_types %}
-            <div class="header">{{ meal_name }}</div>
-        {% endfor %}
-
-        {% for day_code, day_name in day_choices %}
-            
-            <div class="cell day-cell">{{ day_name }}</div>
-            
-            {% for meal_code, meal_name in meal_types %}
-                <div class="cell meal-cell">
-                    
-                    {% with slot_data=meal_grid|get_item:day_code|get_item:'meals'|get_item:meal_code %}
-                        
-                        {% if slot_data and slot_data.slot_obj %}
-                            
-                            <a href="{% url 'meal_slot_update' pk=slot_data.slot_obj.pk %}" class="edit-slot-link" title="Modifica Pasto">
-                                <i class="fas fa-edit"></i> Modifica/Aggiungi Ricette
-                            </a>
-                            
-                            {% for recipe in slot_data.recipes %}
-                                <span class="recipe-name-display">
-                                    {{ recipe.name }}
-                                </span>
-                            {% empty %}
-                                <span class="recipe-name-display">
-                                    Nessuna Ricetta
-                                </span>
-                            {% endfor %}
-
-                        {% else %}
-                            <a href="{% url 'meal_slot_create' day=day_code meal_type=meal_code %}" class="create-slot-link">
-                                <i class="fas fa-plus-circle"></i> Pianifica
-                            </a>
-                        {% endif %}
-
-                    {% endwith %}
-                </div>
-            {% endfor %}
-        {% endfor %}
-
-    </div>
     <div class="forms-container">
         
         <div class="action-box">
             <a href="{% url 'shopping_list' %}" class="big-link style-shopping">
                 <i class="fas fa-shopping-cart"></i>
-                <strong>Lista della Spesa</strong>
-                <small>Aggrega gli ingredienti della settimana.</small>
+                <div>
+                    <strong>Lista della Spesa</strong>
+                    <small>Aggrega gli ingredienti della settimana.</small>
+                </div>
             </a>
         </div>
         
         <div class="action-box">
             <a href="{% url 'recipe_create' %}" class="big-link style-create">
-                <i class="fas fa-utensils"></i>
-                <strong>Crea Nuova Ricetta</strong>
-                <small>Aggiungi un nuovo piatto al ricettario.</small>
+                <i class="fas fa-plus-circle"></i>
+                <div>
+                    <strong>Crea Nuova Ricetta</strong>
+                    <small>Aggiungi un nuovo piatto al ricettario.</small>
+                </div>
             </a>
         </div>
-        
+
         <div class="action-box">
             <a href="{% url 'recipe_list' %}" class="big-link style-list">
-                <i class="fas fa-list"></i>
-                <strong>Modifica Ricetta Esistente</strong>
-                <small>Visualizza e modifica tutte le ricette nel ricettario.</small>
+                <i class="fas fa-list-ul"></i>
+                <div>
+                    <strong>Modifica Ricetta</strong>
+                    <small>Visualizza e modifica tutte le ricette nel ricettario.</small>
+                </div>
             </a>
         </div>
         
         <div class="action-box">
-            <form method="POST" action="{% url 'reset_weekly_plan' %}">
+            <form method="post" action="{% url 'reset_weekly_plan' %}">
                 {% csrf_token %}
-                <button type="submit" class="big-link style-reset" 
-                        onclick="return confirm('Sei sicuro di voler resettare l\'intero piano settimanale? Questa azione è irreversibile.');">
+                <button type="submit" class="big-link style-reset" onclick="return confirm('Sei sicuro di voler cancellare TUTTO il piano settimanale? Questa azione non può essere annullata.');">
                     <i class="fas fa-trash-alt"></i>
-                    <strong>Reset Settimana</strong>
-                    <small>Svuota tutti i pasti pianificati.</small>
+                    <div>
+                        <strong>Reset Settimana</strong>
+                        <small>Svuota tutti i pasti pianificati.</small>
+                    </div>
                 </button>
             </form>
         </div>
-        
     </div>
-    </body>
+    <div class="form-section">
+        <h3>Piano Settimanale</h3>
+        <div class="grid-wrapper">
+            <div class="grid-container">
+            
+                <div class="header">Giorno</div>
+                {% for meal_code, meal_name in meal_types %}
+                    <div class="header">{{ meal_name }}</div>
+                {% endfor %}
+
+                {% for day_code, day_data in meal_grid.items %}
+                    
+                    <div class="cell day-cell">{{ day_data.name }}</div>
+                    
+                    {% for meal_type, slot_data in day_data.meals.items %}
+                        <div class="cell meal-cell">
+                            
+                            {% if slot_data %}
+                                {% for recipe in slot_data.recipes %}
+                                    <span class="recipe-name-display">{{ recipe.name }}</span>
+                                {% endfor %}
+                                
+                                <a href="{% url 'meal_slot_update' pk=slot_data.slot_obj.pk %}" class="edit-slot-link">
+                                    <i class="fas fa-edit"></i> Modifica
+                                </a>
+                                
+                            {% else %}
+                                <a href="{% url 'meal_slot_create' day=day_code meal_type=meal_type %}" class="create-slot-link">
+                                    <i class="fas fa-plus"></i> Pianifica
+                                </a>
+                            {% endif %}
+                            
+                        </div>
+                    {% endfor %}
+                    
+                {% endfor %}
+            
+            </div>
+            </div>
+    </div>
+
+</body>
 </html>

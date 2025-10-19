@@ -17,7 +17,7 @@ urlpatterns = [
          views.meal_slot_create, 
          name='meal_slot_create'),
     
-    # 4. Modifica di uno slot pasto esistente (per aggiungere/rimuovere ricette)
+    # 4. Modifica di uno slot pasto esistente
     path('meal-slot/update/<int:pk>/', 
          views.meal_slot_update, 
          name='meal_slot_update'),
@@ -33,8 +33,11 @@ urlpatterns = [
     path('recipes/', views.recipe_list, name='recipe_list'),
     
     # 7. Creazione Nuova Ricetta
-    path('recipe/new/', views.recipe_detail, name='recipe_create'),
+    path('recipe/new/', views.recipe_create, name='recipe_create'),
     
-    # 8. Modifica Ricetta Esistente
-    path('recipe/<int:pk>/', views.recipe_detail, name='recipe_update'),
+    # 8. Modifica Ricetta Esistente (Dettaglio/Update)
+    path('recipe/<int:pk>/', views.recipe_detail, name='recipe_detail'),
+    
+    # 9. Rotta per la creazione di un nuovo ingrediente (aggiunto)
+    path('ingredient/new/', views.ingredient_create, name='ingredient_create'),
 ]

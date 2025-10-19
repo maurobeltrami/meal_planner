@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpesaFacile | Lista della Spesa</title>
+    <title>SpesaFacile | {{ title }}</title>
     <link rel="stylesheet" href="{% static 'core/style.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -15,23 +15,25 @@
         <i class="fas fa-arrow-left"></i> Torna al Piano Settimanale
     </a>
 
-    <h1>🛒 Lista della Spesa Aggregata</h1>
+    <h1>🛒 {{ title }}</h1>
 
     <div class="form-section">
         {% if shopping_list %}
-            <h3>Ingredienti Necessari</h3>
+            <h3>Totale Ingredienti Settimanali</h3>
+            <div class="shopping-list-container">
+                {% for item in shopping_list %}
+                    <div class="shopping-list-item">
+                        <span class="item-quantity">
+                            <strong>{{ item.quantity|floatformat:"0" }} {{ item.unit }}</strong>
+                        </span>
+                        <span class="item-name">{{ item.name }}</span>
+                    </div>
+                {% endfor %}
+            </div>
             
-            <ul class="shopping-list">
-            {% for item in shopping_list %}
-                <li class="shopping-item">
-                    <span class="item-name">{{ item.name }}</span> 
-                    <span class="item-quantity">({{ item.quantity|floatformat:"-2" }} {{ item.unit }})</span>
-                </li>
-            {% endfor %}
-            </ul>
-        
+            <p class="small-info">Questa lista aggrega automaticamente le quantità necessarie per tutti i pasti pianificati.</p>
         {% else %}
-            <p>Nessun ingrediente trovato. Assicurati di aver pianificato ricette per la settimana!</p>
+            <p>La lista della spesa è vuota. Pianifica i tuoi pasti nella <a href="{% url 'weekly_plan' %}">pagina principale</a>.</p>
         {% endif %}
     </div>
 

@@ -1,4 +1,5 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -10,95 +11,92 @@
 </head>
 <body>
     
-    <a href="{% url 'weekly_plan' %}" class="back-link">⬅️ Torna al Piano Settimanale</a>
-    
-    <h1>🍽️ {{ title }}</h1>
+    <a href="{% url 'weekly_plan' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Torna al Piano Settimanale
+    </a>
+
+    <h1>🗓️ {{ title }}</h1>
 
     <div class="form-section">
-        <h3>Ricette per il Pasto: {{ meal_slot.get_day_display }} - {{ meal_slot.get_meal_type_display }}</h3>
+        <h3>Ricette per il Pasto:</h3>
         
         <form method="post">
             {% csrf_token %}
             
             {{ formset.management_form }}
             
-            <div id="recipe-formset-container">
-                <div class="formset-row header-row">
-                    <div class="formset-header">Ricetta</div>
-                    <div class="formset-header delete-header">Cancella</div>
-                </div>
+            <div class="formset-row header-row">
+                <div class="formset-header">Ricetta</div>
+                <div class="delete-header">Cancella</div>
+            </div>
 
-                {% for form in formset %}
-                    <div class="formset-row formset-form {% if form.instance.pk %}existing-row{% else %}new-row{% endif %}">
-                        <div class="field-input">{{ form.recipe.label_tag }}{{ form.recipe }}{{ form.recipe.errors }}</div>
-                        <div class="delete-checkbox">{{ form.DELETE }}{{ form.DELETE.label_tag }}</div>
+            <div id="formset-container">
+                {% for formset_form in formset %}
+                    <div class="formset-row meal-form-row">
+                        <div class="field-input">{{ formset_form.recipe }}</div>
+                        <div class="delete-checkbox">{{ formset_form.DELETE }}</div>
+                        {{ formset_form.id }}
                     </div>
+                    {% if formset_form.non_field_errors %}
+                        <div class="error-message">{{ formset_form.non_field_errors }}</div>
+                    {% endif %}
                 {% endfor %}
-                
-                {% with form=formset.empty_form %}
-                <div class="formset-row formset-form new-row" id="empty-form" style="display: none;">
-                    <div class="field-input">{{ form.recipe.label_tag }}{{ form.recipe }}</div>
-                    <div class="delete-checkbox">{{ form.DELETE }}{{ form.DELETE.label_tag }}{{ form.id }}</div>
-                </div>
-                {% endwith %}
             </div>
-
-            <div class="form-actions">
-                <button type="button" id="add-recipe-btn" class="formset-add-btn">
-                    <i class="fas fa-plus"></i> Aggiungi altra Ricetta
-                </button>
-                <button type="submit" class="submit-btn full-width-btn">Salva Modifiche al Pasto</button>
-            </div>
+            
+            <button type="button" class="formset-add-btn" id="add-meal-item">
+                <i class="fas fa-plus"></i> Aggiungi altra Ricetta
+            </button>
+            
+            <button type="submit" class="submit-btn full-width-btn">Salva Modifiche al Pasto</button>
         </form>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const addButton = document.getElementById('add-recipe-btn');
-            const container = document.getElementById('recipe-formset-container');
-            const emptyForm = document.getElementById('empty-form');
-            const totalForms = document.getElementById('id_mealrecipe_set-TOTAL_FORMS');
-            let formIdx = parseInt(totalForms.value);
-
-            function updateElementIndex(el, prefix, index) {
-                const nameRegex = new RegExp('(' + prefix + '-\\d+)');
-                const idRegex = new RegExp('(' + prefix + '_\\d+)');
-
-                if (el.tagName === 'LABEL') {
-                    el.htmlFor = el.htmlFor.replace(nameRegex, prefix + '-' + index);
-                }
-                if (el.name) {
-                    el.name = el.name.replace(nameRegex, prefix + '-' + index);
-                }
-                if (el.id) {
-                    el.id = el.id.replace(idRegex, prefix + '_' + index);
-                }
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtn = document.getElementById('add-meal-item');
+        const formContainer = document.getElementById('formset-container');
+        const totalForms = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+        const emptyForm = formContainer.querySelector('.meal-form-row').cloneNode(true);
+        
+        // Puliamo la riga vuota clonata per rimuovere valori e ID
+        emptyForm.querySelectorAll('input, select').forEach(input => {
+            if (input.type === 'checkbox') {
+                input.checked = false;
+            } else if (input.tagName === 'SELECT') {
+                input.selectedIndex = 0; // Seleziona l'opzione vuota
             }
-
-            addButton.addEventListener('click', function() {
-                const newForm = emptyForm.cloneNode(true);
-                
-                newForm.id = 'id_mealrecipe_set-' + formIdx;
-                newForm.style.display = 'grid'; 
-
-                newForm.querySelectorAll('*').forEach(function(element) {
-                    updateElementIndex(element, 'mealrecipe_set', formIdx);
-                    
-                    if (element.tagName === 'INPUT' || element.tagName === 'SELECT') {
-                        if (element.type !== 'hidden' && element.name.indexOf('-DELETE') === -1) {
-                            element.value = '';
-                        }
-                    }
-                });
-                
-                container.appendChild(newForm);
-                
-                formIdx++;
-                totalForms.value = formIdx;
-                
-                newForm.querySelector('select').focus();
-            });
+            // Rimuoviamo ID e VALUE per evitare conflitti, Django li gestirà
+            input.id = '';
+            input.value = '';
         });
+        
+        // Rimuove la casella ID del form esistente
+        emptyForm.querySelector('input[name$="-id"]').remove();
+
+        addBtn.addEventListener('click', () => {
+            let formCounter = parseInt(totalForms.value);
+            
+            const newFormRow = emptyForm.cloneNode(true);
+
+            // Sostituisce l'indice numerico (es. 0, 1, 2) con il nuovo formCounter
+            newFormRow.innerHTML = newFormRow.innerHTML.replace(new RegExp('{{ formset.prefix }}-(\\d+)', 'g'), `{{ formset.prefix }}-${formCounter}`);
+            
+            // Re-aggiorna i nomi degli input e select per il nuovo indice
+            newFormRow.querySelectorAll('input, select').forEach(input => {
+                input.name = input.name.replace(new RegExp('{{ formset.prefix }}-(\\d+)-', 'g'), `{{ formset.prefix }}-${formCounter}-`);
+            });
+
+            formContainer.appendChild(newFormRow);
+            
+            // Incrementa il conteggio totale dei form
+            totalForms.value = formCounter + 1;
+        });
+        
+        // Inizializzazione: Assicurati che l'HTML non abbia un form "vuoto" con '__prefix__'
+        // Se Django lo fornisce, usa quello come base; altrimenti, usa la prima riga clonata.
+        
+    });
     </script>
+    
 </body>
 </html>

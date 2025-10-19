@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.forms import inlineformset_factory
 from django.urls import reverse
-from django.db.models import Sum 
+from django.db.models import Sum, F
+from django.db.models.functions import Lower 
 from .models import (
     Recipe, Ingredient, RecipeIngredient, 
     MealSlot, MealRecipe, 
@@ -29,7 +30,7 @@ def build_weekly_grid():
 
     for slot in all_slots:
         
-        # CORRETTO: Filtra MealRecipe usando 'meal_slot' (il nome del campo)
+        # Filtra MealRecipe usando 'meal_slot' (il nome del campo)
         meal_recipes = MealRecipe.objects.filter(meal_slot=slot).select_related('recipe')
         recipes_list = [mr.recipe for mr in meal_recipes]
         
@@ -65,6 +66,27 @@ def weekly_plan(request):
 
 
 # ======================================================================
+# VISTE GESTIONE INGREDIENTI
+# ======================================================================
+
+def ingredient_create(request):
+    """Crea un nuovo ingrediente e reindirizza alla pagina di creazione ricetta."""
+    if request.method == 'POST':
+        form = IngredientForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('recipe_create') 
+    else:
+        form = IngredientForm()
+        
+    context = {
+        'form': form,
+        'title': 'Crea Nuovo Ingrediente'
+    }
+    return render(request, 'core/ingredient_form.html', context)
+
+
+# ======================================================================
 # VISTE RICETTE (Creazione, Dettaglio, Lista)
 # ======================================================================
 
@@ -87,7 +109,7 @@ def recipe_create(request):
             if formset.is_valid(): 
                 formset.instance = recipe
                 formset.save()
-                return redirect('recipe_detail', pk=recipe.pk)
+                return redirect('recipe_detail', pk=recipe.pk) 
     else:
         form = RecipeForm()
         formset = RecipeIngredientFormSet(instance=Recipe())
@@ -95,7 +117,8 @@ def recipe_create(request):
     context = {
         'form': form,
         'formset': formset,
-        'title': 'Crea Nuova Ricetta'
+        'title': 'Crea Nuova Ricetta',
+        'is_new': True  
     }
     return render(request, 'core/recipe_detail.html', context)
 
@@ -121,7 +144,8 @@ def recipe_detail(request, pk):
         'form': form,
         'formset': formset,
         'title': f'Modifica Ricetta: {recipe.name}',
-        'recipe': recipe
+        'recipe': recipe,
+        'is_new': False 
     }
     return render(request, 'core/recipe_detail.html', context)
 
@@ -216,32 +240,34 @@ def reset_weekly_plan(request):
 
 def shopping_list(request):
     """
-    Genera la lista della spesa aggregando gli ingredienti, quantità e unità di misura
-    dalle ricette pianificate.
+    Genera la lista della spesa aggregando gli ingredienti.
+    CORREZIONE DEFINITIVA: Raggruppa per PK dell'Ingrediente e unità normalizzata.
     """
     
+    # 1. Trova tutte le ricette pianificate
     planned_recipe_ids = MealRecipe.objects.values_list('recipe__id', flat=True).distinct()
 
-    # Aggrega quantità, raggruppando per nome dell'ingrediente e per la sua unità di misura.
-    # Usiamo 'ingredient__unit' per attraversare la relazione Ingredient.
+    # 2. Aggrega: Raggruppa per PK, Nome e Unità normalizzata
     shopping_items = (
         RecipeIngredient.objects
         .filter(recipe__id__in=planned_recipe_ids) 
-        .values('ingredient__name', 'ingredient__unit') 
+        .annotate(
+            unit_lower=Lower('ingredient__unit')
+        )
+        .values('ingredient__pk', 'ingredient__name', 'unit_lower') 
         .annotate(total_quantity=Sum('quantity'))
-        .order_by('ingredient__name', 'ingredient__unit') 
+        .order_by('ingredient__name', 'unit_lower') 
     )
 
-    # Preparazione dei dati per il template
+    # 3. Preparazione dei dati per il template
     shopping_list = []
     for item in shopping_items:
-        # Recupera l'unità di misura; usiamo una stringa vuota se è None
-        unit = item['ingredient__unit'] if item['ingredient__unit'] else ''
+        unit = item['unit_lower'] if item['unit_lower'] else ''
         
         shopping_list.append({
             'name': item['ingredient__name'],
-            'quantity': item['total_quantity'], # Passiamo la quantità come numero
-            'unit': unit                       # Passiamo l'unità
+            'quantity': item['total_quantity'],
+            'unit': unit.strip()
         })
 
     context = {

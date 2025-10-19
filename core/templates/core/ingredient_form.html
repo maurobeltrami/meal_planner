@@ -1,0 +1,32 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpesaFacile | {{ title }}</title>
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    
+    <a href="{% url 'recipe_create' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Torna a Crea Ricetta
+    </a>
+
+    <h1>🥕 {{ title }}</h1>
+
+    <div class="form-section">
+        <form method="post">
+            {% csrf_token %}
+            
+            <h3>Dettagli Ingrediente</h3>
+            {{ form.as_p }}
+            
+            <button type="submit" class="submit-btn full-width-btn">Salva Ingrediente</button>
+        </form>
+    </div>
+
+</body>
+</html>
