@@ -1,0 +1,73 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpesaFacile | Gestione Ricette</title>
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    
+    <a href="{% url 'weekly_plan' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Torna al Piano Settimanale
+    </a>
+
+    <h1>⚙️ Gestione Ricette e Ingredienti</h1>
+
+    <div class="form-section">
+        <h3>Ricettario</h3>
+        
+        <div style="margin-bottom: 20px;">
+            <a href="{% url 'recipe_create' %}" class="submit-btn full-width-btn">
+                <i class="fas fa-plus"></i> Crea Nuova Ricetta
+            </a>
+        </div>
+        
+        {% if recipes %}
+            <div class="recipe-list-container">
+                {% for recipe in recipes %}
+                    <div class="recipe-list-item">
+                        <span class="recipe-name">{{ recipe.name }}</span>
+                        
+                        <div class="recipe-actions">
+                            <a href="{% url 'recipe_detail' pk=recipe.pk %}" class="edit-btn small-btn">
+                                <i class="fas fa-edit"></i> Modifica
+                            </a>
+                            
+                            <form method="post" action="{% url 'recipe_delete' pk=recipe.pk %}" style="display:inline;" onsubmit="return confirm('Sei sicuro di voler eliminare {{ recipe.name }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="submit-btn small-btn delete-btn">
+                                    <i class="fas fa-trash-alt"></i> Elimina
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Nessuna ricetta trovata. Crea la prima ricetta per iniziare.</p>
+        {% endif %}
+    </div>
+
+    <hr style="margin: 40px 0;">
+
+    <div class="form-section">
+        <h3>Aggiungi Nuovo Ingrediente Rapido</h3>
+        <p class="small-info">Crea un ingrediente qui se manca nella lista prima di creare la tua ricetta.</p>
+        
+        <form method="post" action="{% url 'ingredient_create' %}">
+            {% csrf_token %}
+            
+            {{ ingredient_form.as_p }}
+            
+            <button type="submit" class="submit-btn full-width-btn">
+                <i class="fas fa-carrot"></i> Salva Ingrediente
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>

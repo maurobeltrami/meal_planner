@@ -8,6 +8,41 @@
     <title>SpesaFacile | {{ title }}</title>
     <link rel="stylesheet" href="{% static 'core/style.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        .add-ingredient-btn {
+            background-color: #28a745; /* Verde per aggiungere */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            text-align: center;
+        }
+        .ingredient-form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .ingredient-form-row select, .ingredient-form-row input[type="number"], .ingredient-form-row input[type="text"] {
+            flex-grow: 1;
+        }
+        .ingredient-form-row input[type="checkbox"] {
+            margin-left: 10px;
+        }
+        #empty-form-template {
+            display: none; /* Nasconde il modello */
+        }
+        .submit-btn.delete-btn {
+            background-color: #dc3545;
+        }
+        .submit-btn.style-ingredient-add {
+            background-color: #007bff;
+        }
+    </style>
 </head>
 <body>
     
@@ -18,6 +53,7 @@
     <h1>{{ title }}</h1>
 
     <div class="form-section">
+        <h3>Dettagli Base</h3>
         
         <form method="post" action="
             {% if is_new %}
@@ -26,75 +62,153 @@
                 {% url 'recipe_detail' pk=recipe.pk %} 
             {% endif %}
         ">
-            {% csrf_token %}
-            
-            <h3>Dettagli Base</h3>
-            {{ form.as_p }}
-            
-            <div style="text-align: right; margin-bottom: 5px;">
-                <a href="{% url 'ingredient_create' %}" class="back-link" style="font-size: 0.9em; font-weight: 500;">
-                    <i class="fas fa-plus"></i> Crea Nuovo Ingrediente
-                </a>
-            </div>
-            
-            <h3>Ingredienti e Quantità</h3>
-            
+        {% csrf_token %}
+        
+        {{ form.as_p }}
+        
+        <h3 style="margin-top: 30px;">Ingredienti e Quantità</h3>
+        
+        <div id="ingredient-form-container">
             {{ formset.management_form }}
             
-            <div class="formset-row header-row">
-                <div class="formset-header">Ingrediente</div>
-                <div class="formset-header">Quantità</div>
-                <div class="delete-header">Cancella</div>
-            </div>
-
-            {% for formset_form in formset %}
-                <div class="formset-row">
-                    <div class="field-input">{{ formset_form.ingredient }}</div>
-                    <div class="field-input">{{ formset_form.quantity }}</div>
-                    <div class="delete-checkbox">{{ formset_form.DELETE }}</div>
+            {% for form_ri in formset %}
+                <div class="ingredient-form-row">
+                    {% for field in form_ri.hidden_fields %}
+                        {{ field }}
+                    {% endfor %}
+                    
+                    {{ form_ri.ingredient }}
+                    {{ form_ri.quantity }}
+                    
+                    <label for="{{ form_ri.DELETE.id_for_label }}" style="white-space: nowrap;">Cancella</label>
+                    {{ form_ri.DELETE }}
                 </div>
-                {% if formset_form.non_field_errors %}
-                    <div class="error-message">{{ formset_form.non_field_errors }}</div>
-                {% endif %}
             {% endfor %}
             
-            <button type="button" class="formset-add-btn full-width-btn" id="add-item">
-                <i class="fas fa-plus"></i> Aggiungi Ingrediente
-            </button>
-            
-            <button type="submit" class="submit-btn full-width-btn">Salva Ricetta</button>
+        </div>
+        
+        <button type="button" id="add-ingredient-btn" class="add-ingredient-btn">
+            <i class="fas fa-plus"></i> Aggiungi Ingrediente
+        </button>
+
+        <button type="submit" class="submit-btn full-width-btn" style="margin-top: 20px;">Salva Ricetta</button>
+        
         </form>
     </div>
 
+    <div id="empty-form-template">
+        {% if formset|length > 0 %}
+            <div class="ingredient-form-row" id="empty-form">
+                {% with form_ri=formset.empty_form %}
+                    {% for field in form_ri.hidden_fields %}
+                        {{ field }}
+                    {% endfor %}
+                    {{ form_ri.ingredient }}
+                    {{ form_ri.quantity }}
+                    <label for="{{ form_ri.DELETE.id_for_label }}" style="white-space: nowrap;">Cancella</label>
+                    {{ form_ri.DELETE }}
+                {% endwith %}
+            </div>
+        {% else %}
+            <div class="ingredient-form-row" id="empty-form">
+                <input type="hidden" name="form-ID-id" id="id_form-ID-id">
+                <select name="form-ID-ingredient" id="id_form-ID-ingredient"></select>
+                <input type="number" name="form-ID-quantity" id="id_form-ID-quantity">
+                <input type="hidden" name="form-ID-DELETE" id="id_form-ID-DELETE">
+                <label for="id_form-ID-DELETE" style="white-space: nowrap;">Cancella</label>
+                <input type="checkbox" name="form-ID-DELETE" id="id_form-ID-DELETE">
+            </div>
+        {% endif %}
+    </div>
+
+
+    {% if ingredient_form %}
+        <div class="form-section ingredient-quick-add">
+            <h3>➕ Aggiungi Ingrediente Mancante</h3>
+            <p class="small-info">Se l'ingrediente che cerchi non è nella lista, aggiungilo qui. Dovrai salvare nuovamente la ricetta in corso.</p>
+            
+            <form method="post" action="{% url 'ingredient_create' %}">
+                {% csrf_token %}
+                
+                <input type="hidden" name="next_url" value="{% if is_new %}recipe_create{% else %}recipe_detail{% endif %}">
+                {% if not is_new and recipe %}
+                    <input type="hidden" name="recipe_pk" value="{{ recipe.pk }}">
+                {% endif %}
+
+                {{ ingredient_form.as_p }}
+                
+                <button type="submit" class="submit-btn full-width-btn style-ingredient-add">
+                    <i class="fas fa-carrot"></i> Salva e Ricarica Ricetta
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if not is_new and recipe %}
+        <div class="form-section delete-section">
+            <h3>Gestione Avanzata</h3>
+            
+            <form method="post" action="{% url 'recipe_delete' pk=recipe.pk %}" onsubmit="return confirm('Sei sicuro di voler eliminare definitivamente questa ricetta?');">
+                {% csrf_token %}
+                <button type="submit" class="submit-btn full-width-btn delete-btn">
+                    <i class="fas fa-trash-alt"></i> Elimina Ricetta
+                </button>
+            </form>
+        </div>
+    {% endif %}
+    
+    
     <script>
-    const addBtn = document.getElementById('add-item');
-    const formContainer = document.querySelector('.form-section form');
-    const totalForms = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
-    let formCounter = totalForms.value;
-
-    addBtn.addEventListener('click', () => {
-        const lastFormRow = document.querySelector('.formset-row:not(.header-row):last-of-type');
-        const newFormRow = lastFormRow.cloneNode(true);
-
-        newFormRow.innerHTML = newFormRow.innerHTML.replace(new RegExp('{{ formset.prefix }}-(\\d+)', 'g'), `{{ formset.prefix }}-${formCounter}`);
-        newFormRow.querySelectorAll('input, select').forEach(input => {
-            if (input.type === 'checkbox') {
-                input.checked = false; 
-            } else if (input.tagName === 'SELECT') {
-                input.selectedIndex = 0; // Seleziona l'opzione vuota
-            } else {
-                input.value = ''; 
+        document.addEventListener('DOMContentLoaded', function() {
+            var addButton = document.getElementById('add-ingredient-btn');
+            var container = document.getElementById('ingredient-form-container');
+            var template = document.getElementById('empty-form-template');
+            
+            // Trova gli elementi del formset management
+            var totalForms = document.querySelector('input[name="{{ formset.management_form.TOTAL_FORMS.html_name }}"]');
+            
+            // Assicurati che il template esista e contenga la riga vuota
+            var emptyRowModel = template.querySelector('.ingredient-form-row');
+            if (!emptyRowModel) {
+                 console.error("Modello di riga vuota non trovato. Controlla #empty-form-template.");
+                 return;
             }
-            // Aggiorna gli attributi name
-            input.name = input.name.replace(new RegExp('{{ formset.prefix }}-(\\d+)-', 'g'), `{{ formset.prefix }}-${formCounter}-`);
-            // Rimuove gli attributi id per evitare duplicati HTML
-            input.id = input.id.replace(new RegExp('{{ formset.prefix }}-(\\d+)-', 'g'), `{{ formset.prefix }}-${formCounter}-`);
-        });
 
-        addBtn.parentNode.insertBefore(newFormRow, addBtn);
-        formCounter++;
-        totalForms.value = formCounter;
-    });
+            // Ottieni l'HTML del modello (come stringa)
+            var emptyHtml = emptyRowModel.innerHTML;
+
+
+            addButton.addEventListener('click', function() {
+                // 1. Ottieni l'indice del nuovo form
+                var currentTotal = parseInt(totalForms.value);
+                
+                // 2. Sostituisci l'indice nel codice HTML
+                var newFormHtml = emptyHtml.replace(/__prefix__/g, currentTotal)
+                                           .replace(/-ID-/g, '-' + currentTotal + '-'); // Sostituzione specifica
+                
+                // 3. Crea il nuovo elemento div
+                var newForm = document.createElement('div');
+                newForm.className = 'ingredient-form-row';
+                newForm.innerHTML = newFormHtml;
+                
+                // 4. Pulisci i valori e aggiungi
+                newForm.querySelectorAll('input, select').forEach(function(input) {
+                    // Solo per i campi di input non nascosti (quantity)
+                    if (input.type !== 'hidden' && input.type !== 'checkbox') {
+                        input.value = ''; 
+                    }
+                    if (input.type === 'checkbox') {
+                         input.checked = false;
+                    }
+                });
+
+                // 5. Aggiungi il nuovo form al container
+                container.appendChild(newForm);
+                
+                // 6. Aggiorna TOTAL_FORMS
+                totalForms.value = currentTotal + 1;
+            });
+        });
     </script>
     
 </body>

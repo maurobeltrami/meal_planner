@@ -26,18 +26,19 @@ urlpatterns = [
     path('reset/', views.reset_weekly_plan, name='reset_weekly_plan'),
     
     # ===============================================
-    # VISTE GESTIONE RICETTE
-    # ===============================================
+
+    # 6. Lista di tutte le ricette 
+    path('recipes/', views.recipe_management, name='recipe_management'), 
     
-    # 6. Lista di tutte le ricette (per la modifica centralizzata)
-    path('recipes/', views.recipe_list, name='recipe_list'),
-    
-    # 7. Creazione Nuova Ricetta
+    # 7. Creazione Nuova Ricetta 
     path('recipe/new/', views.recipe_create, name='recipe_create'),
     
-    # 8. Modifica Ricetta Esistente (Dettaglio/Update)
+    # 8. Modifica Ricetta Esistente
     path('recipe/<int:pk>/', views.recipe_detail, name='recipe_detail'),
     
-    # 9. Rotta per la creazione di un nuovo ingrediente (aggiunto)
+    # 9. Eliminazione Ricetta
+    path('recipe/<int:pk>/delete/', views.recipe_delete, name='recipe_delete'),
+    
+    # 10. Rotta per la creazione di un nuovo ingrediente 
     path('ingredient/new/', views.ingredient_create, name='ingredient_create'),
 ]

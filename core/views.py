@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.forms import inlineformset_factory
 from django.urls import reverse
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Count
 from django.db.models.functions import Lower 
 from .models import (
     Recipe, Ingredient, RecipeIngredient, 
@@ -66,28 +66,57 @@ def weekly_plan(request):
 
 
 # ======================================================================
-# VISTE GESTIONE INGREDIENTI
+# VISTE GESTIONE RICETTE E INGREDIENTI (CENTRALIZZATE)
 # ======================================================================
 
+def recipe_management(request):
+    """
+    Pagina centrale per la gestione (lista e link al CRUD) delle ricette 
+    e per il form di creazione rapida degli ingredienti.
+    """
+    
+    # 1. Gestione Lista Ricette
+    recipes = Recipe.objects.all().order_by('name')
+    
+    # 2. Gestione Form Ingrediente
+    ingredient_form = IngredientForm()
+    
+    context = {
+        'recipes': recipes, 
+        'title': 'Gestione Ricette e Ingredienti',
+        'ingredient_form': ingredient_form,
+    }
+    return render(request, 'core/recipe_management.html', context)
+
+
 def ingredient_create(request):
-    """Crea un nuovo ingrediente e reindirizza alla pagina di creazione ricetta."""
+    """
+    Crea un nuovo ingrediente e reindirizza in base alla pagina precedente (recipe_create/detail 
+    o recipe_management).
+    """
     if request.method == 'POST':
         form = IngredientForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('recipe_create') 
-    else:
-        form = IngredientForm()
-        
-    context = {
-        'form': form,
-        'title': 'Crea Nuovo Ingrediente'
-    }
-    return render(request, 'core/ingredient_form.html', context)
+            
+            # Logica di reindirizzamento
+            next_url = request.POST.get('next_url')
+            recipe_pk = request.POST.get('recipe_pk')
+            
+            if next_url == 'recipe_create':
+                return redirect('recipe_create') 
+            elif next_url == 'recipe_detail' and recipe_pk:
+                return redirect('recipe_detail', pk=recipe_pk)
+            
+            # Default: Reindirizza alla pagina di gestione centralizzata
+            return redirect('recipe_management') 
+    
+    # Se la richiesta non è POST o fallisce la validazione, torna alla pagina di gestione
+    return redirect('recipe_management') 
 
 
 # ======================================================================
-# VISTE RICETTE (Creazione, Dettaglio, Lista)
+# VISTE RICETTE (Creazione, Dettaglio, Eliminazione)
 # ======================================================================
 
 RecipeIngredientFormSet = inlineformset_factory(
@@ -101,15 +130,15 @@ def recipe_create(request):
     
     if request.method == 'POST':
         form = RecipeForm(request.POST)
-        formset = RecipeIngredientFormSet(request.POST, instance=Recipe())
+        # Passiamo un'istanza vuota (Recipe()) per l'inizializzazione del formset
+        formset = RecipeIngredientFormSet(request.POST, instance=Recipe()) 
         
         if form.is_valid() and formset.is_valid():
             recipe = form.save()
-            formset = RecipeIngredientFormSet(request.POST, instance=recipe)
-            if formset.is_valid(): 
-                formset.instance = recipe
-                formset.save()
-                return redirect('recipe_detail', pk=recipe.pk) 
+            # Salviamo il formset legandolo all'istanza appena creata
+            formset.instance = recipe
+            formset.save()
+            return redirect('recipe_detail', pk=recipe.pk) 
     else:
         form = RecipeForm()
         formset = RecipeIngredientFormSet(instance=Recipe())
@@ -118,7 +147,8 @@ def recipe_create(request):
         'form': form,
         'formset': formset,
         'title': 'Crea Nuova Ricetta',
-        'is_new': True  
+        'is_new': True,
+        'ingredient_form': IngredientForm(), # Form ingrediente rapido
     }
     return render(request, 'core/recipe_detail.html', context)
 
@@ -145,17 +175,23 @@ def recipe_detail(request, pk):
         'formset': formset,
         'title': f'Modifica Ricetta: {recipe.name}',
         'recipe': recipe,
-        'is_new': False 
+        'is_new': False,
+        'ingredient_form': IngredientForm(), # Form ingrediente rapido
     }
     return render(request, 'core/recipe_detail.html', context)
 
 
-def recipe_list(request):
-    """Visualizza l'elenco di tutte le ricette."""
+def recipe_delete(request, pk):
+    """Elimina una ricetta esistente."""
+    recipe = get_object_or_404(Recipe, pk=pk)
     
-    recipes = Recipe.objects.all().order_by('name')
-    context = {'recipes': recipes, 'title': 'Elenco Ricette'}
-    return render(request, 'core/recipe_list.html', context)
+    if request.method == 'POST':
+        recipe.delete()
+        # Reindirizza alla pagina di gestione centralizzata dopo l'eliminazione
+        return redirect('recipe_management') 
+        
+    # Se non è POST, reindirizza alla pagina di modifica
+    return redirect('recipe_detail', pk=pk) 
 
 
 # ======================================================================
@@ -240,35 +276,49 @@ def reset_weekly_plan(request):
 
 def shopping_list(request):
     """
-    Genera la lista della spesa aggregando gli ingredienti.
-    CORREZIONE DEFINITIVA: Raggruppa per PK dell'Ingrediente e unità normalizzata.
+    Genera la lista della spesa aggregando gli ingredienti, moltiplicando 
+    le dosi per il numero di volte che la ricetta è pianificata.
     """
     
-    # 1. Trova tutte le ricette pianificate
-    planned_recipe_ids = MealRecipe.objects.values_list('recipe__id', flat=True).distinct()
+    # Dizionario finale che conterrà { (pk_ingrediente, unità): {dati} }
+    final_shopping_list = {}
+    
+    # 1. Trova quante volte ogni ricetta è stata pianificata nella settimana
+    recipe_counts = MealRecipe.objects.values('recipe__pk').annotate(count=Count('recipe__pk'))
+    
+    # 2. Cicla su ogni ricetta pianificata e il suo conteggio totale
+    for item in recipe_counts:
+        recipe_pk = item['recipe__pk']
+        count = item['count'] # Numero di volte in cui la ricetta è stata pianificata
 
-    # 2. Aggrega: Raggruppa per PK, Nome e Unità normalizzata
-    shopping_items = (
-        RecipeIngredient.objects
-        .filter(recipe__id__in=planned_recipe_ids) 
-        .annotate(
-            unit_lower=Lower('ingredient__unit')
-        )
-        .values('ingredient__pk', 'ingredient__name', 'unit_lower') 
-        .annotate(total_quantity=Sum('quantity'))
-        .order_by('ingredient__name', 'unit_lower') 
-    )
-
-    # 3. Preparazione dei dati per il template
-    shopping_list = []
-    for item in shopping_items:
-        unit = item['unit_lower'] if item['unit_lower'] else ''
+        # Ottieni tutti gli ingredienti (RecipeIngredient) per questa ricetta specifica
+        ingredients = RecipeIngredient.objects.filter(recipe__pk=recipe_pk).select_related('ingredient')
         
-        shopping_list.append({
-            'name': item['ingredient__name'],
-            'quantity': item['total_quantity'],
-            'unit': unit.strip()
-        })
+        for ri in ingredients:
+            name = ri.ingredient.name
+            # Normalizza l'unità di misura per l'aggregazione
+            unit = ri.ingredient.unit.lower().strip()
+            # Chiave univoca per l'aggregazione: PK dell'Ingrediente e unità normalizzata
+            key = (ri.ingredient.pk, unit)
+            
+            # Calcola la quantità totale moltiplicando la dose base per il conteggio
+            total_quantity = ri.quantity * count 
+            
+            # Aggiorna il dizionario finale
+            if key not in final_shopping_list:
+                final_shopping_list[key] = {
+                    'name': name,
+                    'quantity': total_quantity,
+                    'unit': unit
+                }
+            else:
+                final_shopping_list[key]['quantity'] += total_quantity
+
+
+    # 3. Preparazione dei dati per il template e ordinamento
+    shopping_list = list(final_shopping_list.values())
+    shopping_list.sort(key=lambda x: x['name'])
+
 
     context = {
         'title': 'Lista della Spesa Aggregata',
